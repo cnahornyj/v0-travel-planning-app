@@ -10,6 +10,41 @@ interface GoogleMapProps {
   onPlaceSelect: (place: Place) => void
 }
 
+const getPlaceIcon = (type?: string, isSelected = false, isOpen?: boolean) => {
+  const iconConfig = {
+    restaurant: { color: "#ef4444", symbol: "🍽️" },
+    tourist_attraction: { color: "#f59e0b", symbol: "🎯" },
+    lodging: { color: "#3b82f6", symbol: "🏨" },
+    museum: { color: "#8b5cf6", symbol: "🏛️" },
+    park: { color: "#10b981", symbol: "🌳" },
+    shopping_mall: { color: "#ec4899", symbol: "🛍️" },
+    default: { color: isSelected ? "#1f2937" : "#8b5cf6", symbol: "📍" },
+  }
+
+  const config = iconConfig[type as keyof typeof iconConfig] || iconConfig.default
+
+  // Add status indicator ring for open/closed status
+  const statusRing =
+    isOpen !== undefined
+      ? `<circle cx="16" cy="11" r="6" fill="none" stroke="${isOpen ? "#10b981" : "#ef4444"}" strokeWidth="2" opacity="0.8"/>`
+      : ""
+
+  return {
+    url:
+      "data:image/svg+xml;charset=UTF-8," +
+      encodeURIComponent(`
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 2C11.03 2 7 6.03 7 11c0 7 9 17 9 17s9-10 9-17c0-4.97-4.03-9-9-9z" fill="${config.color}" stroke="white" strokeWidth="2"/>
+        ${statusRing}
+        <circle cx="16" cy="11" r="4" fill="white"/>
+        <text x="16" y="15" textAnchor="middle" fontSize="8" fill="${config.color}">${config.symbol}</text>
+      </svg>
+    `),
+    scaledSize: new window.google.maps.Size(32, 32),
+    anchor: new window.google.maps.Point(16, 32),
+  }
+}
+
 export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any | null>(null)
@@ -71,23 +106,65 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
         position: { lat: place.lat, lng: place.lng },
         map: mapInstanceRef.current,
         title: place.name,
-        icon: {
-          url:
-            "data:image/svg+xml;charset=UTF-8," +
-            encodeURIComponent(`
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#8b5cf6"/>
-              <circle cx="12" cy="9" r="2.5" fill="white"/>
-            </svg>
-          `),
-          scaledSize: new window.google.maps.Size(24, 24),
-        },
+        icon: getPlaceIcon(place.type, false, place.isOpen),
+      })
+
+      const openStatus =
+        place.isOpen !== undefined
+          ? `<div style="margin: 4px 0; display: flex; align-items: center; gap: 4px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${place.isOpen ? "#10b981" : "#ef4444"};"></div>
+          <span style="font-size: 12px; font-weight: 500; color: ${place.isOpen ? "#059669" : "#dc2626"};">
+            ${place.isOpen ? "Open" : "Closed"}
+          </span>
+        </div>`
+          : ""
+
+      const todaysHours = place.openingHours?.weekdayText
+        ? (() => {
+            const today = new Date().getDay()
+            const todayIndex = today === 0 ? 6 : today - 1
+            const hours = place.openingHours.weekdayText[todayIndex]
+            return hours ? hours.replace(/^[^:]+:\s*/, "") : null
+          })()
+        : null
+
+      const hoursDisplay = todaysHours
+        ? `<div style="margin: 4px 0; font-size: 11px; color: #666;">
+          <strong>Today:</strong> ${todaysHours}
+        </div>`
+        : ""
+
+      const contactInfo = [
+        place.phone ? `<div style="font-size: 11px; color: #666;">📞 ${place.phone}</div>` : "",
+        place.website
+          ? `<div style="font-size: 11px;"><a href="${place.website}" target="_blank" style="color: #2563eb;">🌐 Website</a></div>`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("")
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px; max-width: 250px; font-family: system-ui, -apple-system, sans-serif;">
+            <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">${place.name}</h3>
+            <p style="margin: 0 0 4px 0; font-size: 12px; color: #666;">${place.address}</p>
+            ${place.rating ? `<div style="margin: 4px 0; font-size: 12px;">⭐ ${place.rating}</div>` : ""}
+            ${openStatus}
+            ${hoursDisplay}
+            ${contactInfo}
+          </div>
+        `,
       })
 
       marker.addListener("click", () => {
+        // Close all other info windows
+        markersRef.current.forEach((m) => m.infoWindow?.close())
+        infoWindow.open(mapInstanceRef.current, marker)
         onPlaceSelect(place)
       })
 
+      // Store info window reference
+      marker.infoWindow = infoWindow
       markersRef.current.push(marker)
     })
 
@@ -97,21 +174,36 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
         position: { lat: selectedPlace.lat, lng: selectedPlace.lng },
         map: mapInstanceRef.current,
         title: selectedPlace.name,
-        icon: {
-          url:
-            "data:image/svg+xml;charset=UTF-8," +
-            encodeURIComponent(`
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#1f2937"/>
-              <circle cx="12" cy="9" r="2.5" fill="white"/>
-            </svg>
-          `),
-        },
+        icon: getPlaceIcon(selectedPlace.type, true, selectedPlace.isOpen),
       })
 
+      const openStatus =
+        selectedPlace.isOpen !== undefined
+          ? `<div style="margin: 4px 0; display: flex; align-items: center; gap: 4px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${selectedPlace.isOpen ? "#10b981" : "#ef4444"};"></div>
+          <span style="font-size: 12px; font-weight: 500; color: ${selectedPlace.isOpen ? "#059669" : "#dc2626"};">
+            ${selectedPlace.isOpen ? "Open" : "Closed"}
+          </span>
+        </div>`
+          : ""
+
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px; max-width: 250px; font-family: system-ui, -apple-system, sans-serif;">
+            <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">${selectedPlace.name}</h3>
+            <p style="margin: 0 0 4px 0; font-size: 12px; color: #666;">${selectedPlace.address}</p>
+            ${selectedPlace.rating ? `<div style="margin: 4px 0; font-size: 12px;">⭐ ${selectedPlace.rating}</div>` : ""}
+            ${openStatus}
+          </div>
+        `,
+      })
+
+      // Auto-open info window for selected place
+      infoWindow.open(mapInstanceRef.current, marker)
+      marker.infoWindow = infoWindow
       markersRef.current.push(marker)
     }
-  }, [savedPlaces, selectedPlace])
+  }, [savedPlaces, selectedPlace, onPlaceSelect])
 
   if (!isLoaded) {
     return (

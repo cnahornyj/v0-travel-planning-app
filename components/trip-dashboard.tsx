@@ -14,7 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Calendar, Plus, MapPin, Star, Trash2, Edit, Clock, PlusCircle } from "lucide-react"
+import { ScheduleGenerator } from "./schedule-generator"
+import { Calendar, Plus, MapPin, Star, Trash2, Edit, Clock, PlusCircle, Route, FileText } from "lucide-react"
 import type { Trip, Place } from "./travel-planner"
 
 interface TripDashboardProps {
@@ -26,6 +27,7 @@ interface TripDashboardProps {
   onAddPlaceToTrip: (tripId: string, place: Place) => void
   onRemovePlaceFromTrip: (tripId: string, placeId: string) => void
   onPlaceSelect: (place: Place) => void
+  onUpdatePlaceNotes: (tripId: string, placeId: string, notes: string) => void
 }
 
 export function TripDashboard({
@@ -37,11 +39,14 @@ export function TripDashboard({
   onAddPlaceToTrip,
   onRemovePlaceFromTrip,
   onPlaceSelect,
+  onUpdatePlaceNotes,
 }: TripDashboardProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
   const [expandedTrip, setExpandedTrip] = useState<string | null>(null)
   const [addPlaceToTripId, setAddPlaceToTripId] = useState<string | null>(null)
+  const [scheduleGeneratorTrip, setScheduleGeneratorTrip] = useState<Trip | null>(null)
+  const [editingNotes, setEditingNotes] = useState<{ tripId: string; placeId: string; notes: string } | null>(null)
 
   const [newTrip, setNewTrip] = useState({
     name: "",
@@ -63,6 +68,13 @@ export function TripDashboard({
     if (editingTrip && editingTrip.name.trim()) {
       onUpdateTrip(editingTrip.id, editingTrip)
       setEditingTrip(null)
+    }
+  }
+
+  const handleSaveNotes = () => {
+    if (editingNotes) {
+      onUpdatePlaceNotes(editingNotes.tripId, editingNotes.placeId, editingNotes.notes)
+      setEditingNotes(null)
     }
   }
 
@@ -263,14 +275,29 @@ export function TripDashboard({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setExpandedTrip(expandedTrip === trip.id ? null : trip.id)}
-                >
-                  {expandedTrip === trip.id ? "Hide Places" : "View Places"}
-                </Button>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setExpandedTrip(expandedTrip === trip.id ? null : trip.id)}
+                  >
+                    {expandedTrip === trip.id ? "Hide Places" : "View Places"}
+                  </Button>
+
+                  {trip.places.length > 1 && trip.startDate && trip.endDate && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setScheduleGeneratorTrip(trip)}
+                      className="gap-1"
+                    >
+                      <Route className="w-3 h-3" />
+                      Generate Schedule
+                    </Button>
+                  )}
+                </div>
+
                 <Dialog
                   open={addPlaceToTripId === trip.id}
                   onOpenChange={(open) => setAddPlaceToTripId(open ? trip.id : null)}
@@ -334,8 +361,8 @@ export function TripDashboard({
                         className="p-3 cursor-pointer hover:bg-accent/5 transition-colors"
                         onClick={() => onPlaceSelect(place)}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-xs font-medium">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
                             {index + 1}
                           </div>
                           <div className="w-10 h-10 bg-muted rounded flex-shrink-0 overflow-hidden">
@@ -356,18 +383,38 @@ export function TripDashboard({
                                 <span className="text-xs">{place.rating}</span>
                               </div>
                             )}
+                            {place.notes && (
+                              <p className="text-xs text-muted-foreground mt-1 italic">"{place.notes}"</p>
+                            )}
                           </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              onRemovePlaceFromTrip(trip.id, place.id)
-                            }}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingNotes({
+                                  tripId: trip.id,
+                                  placeId: place.id,
+                                  notes: place.notes || "",
+                                })
+                              }}
+                              title="Add/Edit notes"
+                            >
+                              <FileText className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onRemovePlaceFromTrip(trip.id, place.id)
+                              }}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                       </Card>
                     ))
@@ -432,6 +479,40 @@ export function TripDashboard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editingNotes} onOpenChange={(open) => !open && setEditingNotes(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Place Notes</DialogTitle>
+            <DialogDescription>Add your personal notes about this location.</DialogDescription>
+          </DialogHeader>
+          {editingNotes && (
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Add notes about this place... (e.g., must try the pasta, closes early on Sundays, great for photos)"
+                value={editingNotes.notes}
+                onChange={(e) => setEditingNotes({ ...editingNotes, notes: e.target.value })}
+                rows={4}
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingNotes(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNotes}>Save Notes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {scheduleGeneratorTrip && (
+        <ScheduleGenerator
+          trip={scheduleGeneratorTrip}
+          onUpdateTrip={onUpdateTrip}
+          isOpen={!!scheduleGeneratorTrip}
+          onClose={() => setScheduleGeneratorTrip(null)}
+        />
+      )}
     </div>
   )
 }

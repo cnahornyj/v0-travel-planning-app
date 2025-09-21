@@ -7,10 +7,10 @@ import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { SavedPlaces } from "./saved-places"
 import { TripDashboard } from "./trip-dashboard"
-import { Card } from "@/components/ui/card"
+import { PlaceDetails } from "./place-details"
 import { Button } from "@/components/ui/button"
 import { useLocalStorage } from "@/hooks/use-local-storage"
-import { MapPin, Search, Heart, Calendar, Download, Upload } from "lucide-react"
+import { Search, Heart, Calendar, Download, Upload } from "lucide-react"
 
 export interface Place {
   id: string
@@ -22,6 +22,25 @@ export interface Place {
   rating?: number
   photos?: string[]
   saved?: boolean
+  notes?: string
+  // New detailed fields
+  phone?: string
+  website?: string
+  openingHours?: {
+    periods: Array<{
+      open: { day: number; time: string }
+      close?: { day: number; time: string }
+    }>
+    weekdayText: string[]
+  }
+  isOpen?: boolean
+  priceLevel?: number
+  reviews?: Array<{
+    author: string
+    rating: number
+    text: string
+    time: number
+  }>
 }
 
 export interface Trip {
@@ -43,11 +62,13 @@ export function TravelPlanner() {
     lat: 40.7128,
     lng: -74.006,
   })
+  const [showPlaceDetails, setShowPlaceDetails] = useState(false)
 
   const handlePlaceSelect = useCallback(
     (place: Place) => {
       setSelectedPlace(place)
       setMapCenter({ lat: place.lat, lng: place.lng })
+      setShowPlaceDetails(true)
     },
     [setMapCenter],
   )
@@ -100,6 +121,19 @@ export function TravelPlanner() {
     setTrips((prev) =>
       prev.map((trip) =>
         trip.id === tripId ? { ...trip, places: trip.places.filter((p) => p.id !== placeId) } : trip,
+      ),
+    )
+  }
+
+  const handleUpdatePlaceNotes = (tripId: string, placeId: string, notes: string) => {
+    setTrips((prev) =>
+      prev.map((trip) =>
+        trip.id === tripId
+          ? {
+              ...trip,
+              places: trip.places.map((place) => (place.id === placeId ? { ...place, notes } : place)),
+            }
+          : trip,
       ),
     )
   }
@@ -213,6 +247,11 @@ export function TravelPlanner() {
               onPlaceSelect={handlePlaceSelect}
               onSavePlace={handleSavePlace}
               savedPlaceIds={savedPlaces.map((p) => p.id)}
+              onLocationChange={(location) => setMapCenter({ lat: location.lat, lng: location.lng })}
+              selectedPlace={selectedPlace}
+              onShowDetails={() => setShowPlaceDetails(true)}
+              trips={trips}
+              onAddPlaceToTrip={handleAddPlaceToTrip}
             />
           ) : activeTab === "saved" ? (
             <SavedPlaces places={savedPlaces} onPlaceSelect={handlePlaceSelect} onRemovePlace={handleRemovePlace} />
@@ -226,28 +265,10 @@ export function TravelPlanner() {
               onAddPlaceToTrip={handleAddPlaceToTrip}
               onRemovePlaceFromTrip={handleRemovePlaceFromTrip}
               onPlaceSelect={handlePlaceSelect}
+              onUpdatePlaceNotes={handleUpdatePlaceNotes}
             />
           )}
         </div>
-
-        {/* Selected Place Info */}
-        {selectedPlace && (
-          <Card className="m-4 p-4 border-accent/20">
-            <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-accent mt-1 flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-foreground truncate">{selectedPlace.name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{selectedPlace.address}</p>
-                {selectedPlace.rating && (
-                  <div className="flex items-center gap-1 mt-2">
-                    <span className="text-sm font-medium">★</span>
-                    <span className="text-sm text-muted-foreground">{selectedPlace.rating}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        )}
 
         {/* Data persistence status indicator */}
         <div className="px-4 py-2 border-t border-border">
@@ -262,13 +283,24 @@ export function TravelPlanner() {
       </div>
 
       {/* Map */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
         <GoogleMap
           center={mapCenter}
           selectedPlace={selectedPlace}
           savedPlaces={[...savedPlaces, ...allTripPlaces]}
           onPlaceSelect={handlePlaceSelect}
         />
+
+        {showPlaceDetails && selectedPlace && (
+          <PlaceDetails
+            place={selectedPlace}
+            onClose={() => setShowPlaceDetails(false)}
+            onSave={handleSavePlace}
+            isSaved={savedPlaces.some((p) => p.id === selectedPlace.id)}
+            trips={trips}
+            onAddPlaceToTrip={handleAddPlaceToTrip}
+          />
+        )}
       </div>
     </div>
   )
