@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +17,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { ScheduleGenerator } from "./schedule-generator"
-import { Calendar, Plus, MapPin, Star, Trash2, Edit, Clock, PlusCircle, Route, FileText } from "lucide-react"
+import {
+  Calendar,
+  Plus,
+  MapPin,
+  Star,
+  Trash2,
+  Edit,
+  Clock,
+  PlusCircle,
+  Route,
+  FileText,
+  Tag,
+  Sun,
+  Sunset,
+  Moon,
+  Clock3,
+} from "lucide-react"
 import type { Trip, Place } from "./travel-planner"
 
 interface TripDashboardProps {
@@ -28,6 +46,9 @@ interface TripDashboardProps {
   onRemovePlaceFromTrip: (tripId: string, placeId: string) => void
   onPlaceSelect: (place: Place) => void
   onUpdatePlaceNotes: (tripId: string, placeId: string, notes: string) => void
+  onUpdatePlaceTags?: (tripId: string, placeId: string, tags: string[]) => void
+  onUpdatePlaceVisitPreference?: (tripId: string, placeId: string, visitPreference: Place["visitPreference"]) => void
+  onUpdatePlaceImages?: (tripId: string, placeId: string, userImages: string[]) => void // Added image update handler
 }
 
 export function TripDashboard({
@@ -40,6 +61,9 @@ export function TripDashboard({
   onRemovePlaceFromTrip,
   onPlaceSelect,
   onUpdatePlaceNotes,
+  onUpdatePlaceTags,
+  onUpdatePlaceVisitPreference,
+  onUpdatePlaceImages, // Added image update handler
 }: TripDashboardProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
@@ -47,6 +71,23 @@ export function TripDashboard({
   const [addPlaceToTripId, setAddPlaceToTripId] = useState<string | null>(null)
   const [scheduleGeneratorTrip, setScheduleGeneratorTrip] = useState<Trip | null>(null)
   const [editingNotes, setEditingNotes] = useState<{ tripId: string; placeId: string; notes: string } | null>(null)
+  const [editingTags, setEditingTags] = useState<{
+    tripId: string
+    placeId: string
+    tags: string[]
+    newTag: string
+  } | null>(null)
+  const [editingVisitPreference, setEditingVisitPreference] = useState<{
+    tripId: string
+    placeId: string
+    preference: Place["visitPreference"]
+  } | null>(null)
+  const [editingImages, setEditingImages] = useState<{
+    tripId: string
+    placeId: string
+    images: string[]
+    newImage: string
+  } | null>(null)
 
   const [newTrip, setNewTrip] = useState({
     name: "",
@@ -78,6 +119,75 @@ export function TripDashboard({
     }
   }
 
+  const handleSaveTags = () => {
+    if (editingTags && onUpdatePlaceTags) {
+      onUpdatePlaceTags(editingTags.tripId, editingTags.placeId, editingTags.tags)
+      setEditingTags(null)
+    }
+  }
+
+  const handleAddTag = () => {
+    if (editingTags && editingTags.newTag.trim()) {
+      const newTag = editingTags.newTag.trim()
+      if (!editingTags.tags.includes(newTag)) {
+        setEditingTags({
+          ...editingTags,
+          tags: [...editingTags.tags, newTag],
+          newTag: "",
+        })
+      }
+    }
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    if (editingTags) {
+      setEditingTags({
+        ...editingTags,
+        tags: editingTags.tags.filter((tag) => tag !== tagToRemove),
+      })
+    }
+  }
+
+  const handleSaveVisitPreference = () => {
+    if (editingVisitPreference && onUpdatePlaceVisitPreference) {
+      onUpdatePlaceVisitPreference(
+        editingVisitPreference.tripId,
+        editingVisitPreference.placeId,
+        editingVisitPreference.preference,
+      )
+      setEditingVisitPreference(null)
+    }
+  }
+
+  const handleSaveImages = () => {
+    if (editingImages && onUpdatePlaceImages) {
+      onUpdatePlaceImages(editingImages.tripId, editingImages.placeId, editingImages.images)
+      setEditingImages(null)
+    }
+  }
+
+  const handleAddImage = () => {
+    if (editingImages && editingImages.newImage.trim()) {
+      const newImage = editingImages.newImage.trim()
+      if (!editingImages.images.includes(newImage)) {
+        setEditingImages({
+          ...editingImages,
+          images: [...editingImages.images, newImage],
+          newImage: "",
+        })
+      }
+    }
+  }
+
+  const handleRemoveImage = (imageToRemove: string) => {
+    if (editingImages) {
+      setEditingImages({
+        ...editingImages,
+        images: editingImages.images.filter((image) => image !== imageToRemove),
+      })
+    }
+  }
+
   const formatDate = (dateString: string) => {
     if (!dateString) return ""
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -94,6 +204,38 @@ export function TripDashboard({
     const diffTime = Math.abs(end.getTime() - start.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return `${diffDays} day${diffDays !== 1 ? "s" : ""}`
+  }
+
+  const getVisitPreferenceIcon = (preference?: Place["visitPreference"]) => {
+    switch (preference) {
+      case "morning":
+        return <Sun className="w-3 h-3" />
+      case "afternoon":
+        return <Sun className="w-3 h-3" />
+      case "evening":
+        return <Sunset className="w-3 h-3" />
+      case "night":
+        return <Moon className="w-3 h-3" />
+      default:
+        return <Clock3 className="w-3 h-3" />
+    }
+  }
+
+  const getVisitPreferenceLabel = (preference?: Place["visitPreference"]) => {
+    switch (preference) {
+      case "morning":
+        return "Morning"
+      case "afternoon":
+        return "Afternoon"
+      case "evening":
+        return "Evening"
+      case "night":
+        return "Night"
+      case "anytime":
+        return "Anytime"
+      default:
+        return "Not set"
+    }
   }
 
   if (trips.length === 0) {
@@ -386,6 +528,35 @@ export function TripDashboard({
                             {place.notes && (
                               <p className="text-xs text-muted-foreground mt-1 italic">"{place.notes}"</p>
                             )}
+                            {place.tags && place.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {place.tags.map((tag, tagIndex) => (
+                                  <Badge key={tagIndex} variant="secondary" className="text-xs px-1 py-0">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            {place.visitPreference && (
+                              <div className="flex items-center gap-1 mt-1">
+                                {getVisitPreferenceIcon(place.visitPreference)}
+                                <span className="text-xs text-muted-foreground">
+                                  Best time: {getVisitPreferenceLabel(place.visitPreference)}
+                                </span>
+                              </div>
+                            )}
+                            {place.userImages && place.userImages.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {place.userImages.map((image, imageIndex) => (
+                                  <img
+                                    key={imageIndex}
+                                    src={image || "/placeholder.svg"}
+                                    alt={`Image ${imageIndex}`}
+                                    className="w-8 h-8 object-cover rounded"
+                                  />
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-1">
                             <Button
@@ -402,6 +573,53 @@ export function TripDashboard({
                               title="Add/Edit notes"
                             >
                               <FileText className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingTags({
+                                  tripId: trip.id,
+                                  placeId: place.id,
+                                  tags: place.tags || [],
+                                  newTag: "",
+                                })
+                              }}
+                              title="Manage tags"
+                            >
+                              <Tag className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingVisitPreference({
+                                  tripId: trip.id,
+                                  placeId: place.id,
+                                  preference: place.visitPreference || "anytime",
+                                })
+                              }}
+                              title="Set visit preference"
+                            >
+                              <Clock3 className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingImages({
+                                  tripId: trip.id,
+                                  placeId: place.id,
+                                  images: place.userImages || [],
+                                  newImage: "",
+                                })
+                              }}
+                              title="Manage images"
+                            >
+                              <img src="/image-icon.svg" alt="Image" className="w-3 h-3" />
                             </Button>
                             <Button
                               size="sm"
@@ -428,7 +646,6 @@ export function TripDashboard({
         ))}
       </div>
 
-      {/* Edit Trip Dialog */}
       <Dialog open={!!editingTrip} onOpenChange={(open) => !open && setEditingTrip(null)}>
         <DialogContent>
           <DialogHeader>
@@ -501,6 +718,174 @@ export function TripDashboard({
               Cancel
             </Button>
             <Button onClick={handleSaveNotes}>Save Notes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingTags} onOpenChange={(open) => !open && setEditingTags(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Tags</DialogTitle>
+            <DialogDescription>Add tags to categorize and organize this place.</DialogDescription>
+          </DialogHeader>
+          {editingTags && (
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a tag (e.g., restaurant, museum, outdoor)"
+                  value={editingTags.newTag}
+                  onChange={(e) => setEditingTags({ ...editingTags, newTag: e.target.value })}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
+                />
+                <Button onClick={handleAddTag} size="sm">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {editingTags.tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-auto p-0 w-4 h-4 hover:bg-transparent"
+                      onClick={() => handleRemoveTag(tag)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+              {editingTags.tags.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No tags added yet. Add some tags to categorize this place.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTags(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTags}>Save Tags</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingVisitPreference} onOpenChange={(open) => !open && setEditingVisitPreference(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Visit Preference</DialogTitle>
+            <DialogDescription>
+              Choose the best time to visit this place. This can be used when generating schedules.
+            </DialogDescription>
+          </DialogHeader>
+          {editingVisitPreference && (
+            <div className="space-y-4">
+              <Select
+                value={editingVisitPreference.preference || "anytime"}
+                onValueChange={(value) =>
+                  setEditingVisitPreference({
+                    ...editingVisitPreference,
+                    preference: value as Place["visitPreference"],
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="morning">
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-4 h-4" />
+                      Morning (6AM - 12PM)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="afternoon">
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-4 h-4" />
+                      Afternoon (12PM - 6PM)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="evening">
+                    <div className="flex items-center gap-2">
+                      <Sunset className="w-4 h-4" />
+                      Evening (6PM - 10PM)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="night">
+                    <div className="flex items-center gap-2">
+                      <Moon className="w-4 h-4" />
+                      Night (10PM - 6AM)
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="anytime">
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="w-4 h-4" />
+                      Anytime
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingVisitPreference(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveVisitPreference}>Save Preference</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingImages} onOpenChange={(open) => !open && setEditingImages(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Images</DialogTitle>
+            <DialogDescription>Add images to this place.</DialogDescription>
+          </DialogHeader>
+          {editingImages && (
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add an image URL"
+                  value={editingImages.newImage}
+                  onChange={(e) => setEditingImages({ ...editingImages, newImage: e.target.value })}
+                  onKeyPress={(e) => e.key === "Enter" && handleAddImage()}
+                />
+                <Button onClick={handleAddImage} size="sm">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {editingImages.images.map((image, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={image || "/placeholder.svg"}
+                      alt={`Image ${index}`}
+                      className="w-8 h-8 object-cover rounded"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute top-0 right-0 h-auto p-0 w-4 h-4 hover:bg-transparent"
+                      onClick={() => handleRemoveImage(image)}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              {editingImages.images.length === 0 && (
+                <p className="text-sm text-muted-foreground">No images added yet. Add some images to this place.</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingImages(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveImages}>Save Images</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

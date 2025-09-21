@@ -7,7 +7,21 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { X, MapPin, Star, Clock, Phone, Globe, Heart, Plus, Calendar } from "lucide-react"
+import {
+  X,
+  MapPin,
+  Star,
+  Clock,
+  Phone,
+  Globe,
+  Heart,
+  Plus,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Upload,
+  Trash2,
+} from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
 import type { google } from "google-maps"
 
@@ -18,12 +32,25 @@ interface PlaceDetailsProps {
   isSaved: boolean
   trips?: Trip[]
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
+  onUpdateImages?: (placeId: string, userImages: string[]) => void // Added image update handler
 }
 
-export function PlaceDetails({ place, onClose, onSave, isSaved, trips = [], onAddPlaceToTrip }: PlaceDetailsProps) {
+export function PlaceDetails({
+  place,
+  onClose,
+  onSave,
+  isSaved,
+  trips = [],
+  onAddPlaceToTrip,
+  onUpdateImages,
+}: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [isLoading, setIsLoading] = useState(false)
   const [showTripSelection, setShowTripSelection] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0) // Added carousel state
+  const [showImageUpload, setShowImageUpload] = useState(false) // Added image upload dialog state
+
+  const allImages = [...(detailedPlace.photos || []), ...(detailedPlace.userImages || [])]
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -40,6 +67,52 @@ export function PlaceDetails({ place, onClose, onSave, isSaved, trips = [], onAd
     if (event.target === event.currentTarget) {
       onClose()
     }
+  }
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || !onUpdateImages) return
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string
+        const updatedImages = [...(detailedPlace.userImages || []), imageUrl]
+        setDetailedPlace((prev) => ({ ...prev, userImages: updatedImages }))
+        onUpdateImages(detailedPlace.id, updatedImages)
+      }
+      reader.readAsDataURL(file)
+    })
+
+    // Reset input
+    event.target.value = ""
+    setShowImageUpload(false)
+  }
+
+  const handleRemoveImage = (imageIndex: number) => {
+    if (!onUpdateImages) return
+
+    const googlePhotosCount = detailedPlace.photos?.length || 0
+    const userImageIndex = imageIndex - googlePhotosCount
+
+    if (userImageIndex >= 0 && detailedPlace.userImages) {
+      const updatedImages = detailedPlace.userImages.filter((_, index) => index !== userImageIndex)
+      setDetailedPlace((prev) => ({ ...prev, userImages: updatedImages }))
+      onUpdateImages(detailedPlace.id, updatedImages)
+
+      // Adjust current image index if needed
+      if (currentImageIndex >= allImages.length - 1) {
+        setCurrentImageIndex(Math.max(0, allImages.length - 2))
+      }
+    }
+  }
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
   }
 
   const fetchPlaceDetails = async () => {
@@ -175,14 +248,88 @@ export function PlaceDetails({ place, onClose, onSave, isSaved, trips = [], onAd
             )}
           </div>
 
-          {/* Photos */}
-          {detailedPlace.photos && detailedPlace.photos.length > 0 && (
+          {/* Image Carousel */}
+          {allImages && allImages.length > 0 && (
             <div className="mb-4">
-              <img
-                src={detailedPlace.photos[0] || "/placeholder.svg"}
-                alt={detailedPlace.name}
-                className="w-full h-32 object-cover rounded-lg"
-              />
+              <div className="relative">
+                <img
+                  src={allImages[currentImageIndex] || "/placeholder.svg"}
+                  alt={detailedPlace.name}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+
+                {/* Carousel Controls */}
+                {allImages.length > 1 && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0"
+                      onClick={prevImage}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0"
+                      onClick={nextImage}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+
+                    {/* Image Counter */}
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                      {currentImageIndex + 1} / {allImages.length}
+                    </div>
+                  </>
+                )}
+
+                {/* Upload Button */}
+                {onUpdateImages && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="absolute top-2 right-2"
+                    onClick={() => setShowImageUpload(true)}
+                  >
+                    <Upload className="w-4 h-4" />
+                  </Button>
+                )}
+
+                {/* Remove Image Button (only for user images) */}
+                {onUpdateImages && currentImageIndex >= (detailedPlace.photos?.length || 0) && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="absolute top-2 left-2"
+                    onClick={() => handleRemoveImage(currentImageIndex)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Image Thumbnails */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2 mt-2 overflow-x-auto">
+                  {allImages.map((image, index) => (
+                    <button
+                      key={index}
+                      className={`flex-shrink-0 w-12 h-12 rounded border-2 overflow-hidden ${
+                        index === currentImageIndex ? "border-primary" : "border-transparent"
+                      }`}
+                      onClick={() => setCurrentImageIndex(index)}
+                    >
+                      <img
+                        src={image || "/placeholder.svg"}
+                        alt={`${detailedPlace.name} ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -328,6 +475,32 @@ export function PlaceDetails({ place, onClose, onSave, isSaved, trips = [], onAd
                 No trips created yet. Create a trip first to add places to it.
               </p>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Images</DialogTitle>
+            <DialogDescription>Add your own photos of this place to your collection.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-2">Click to upload images</p>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <Button variant="outline" size="sm">
+                Choose Files
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -21,8 +21,11 @@ export interface Place {
   type?: string
   rating?: number
   photos?: string[]
+  userImages?: string[] // Added user-uploaded images array
   saved?: boolean
   notes?: string
+  tags?: string[]
+  visitPreference?: "morning" | "afternoon" | "evening" | "night" | "anytime"
   // New detailed fields
   phone?: string
   website?: string
@@ -136,6 +139,53 @@ export function TravelPlanner() {
           : trip,
       ),
     )
+  }
+
+  const handleUpdatePlaceTags = (tripId: string, placeId: string, tags: string[]) => {
+    setTrips((prev) =>
+      prev.map((trip) =>
+        trip.id === tripId
+          ? {
+              ...trip,
+              places: trip.places.map((place) => (place.id === placeId ? { ...place, tags } : place)),
+            }
+          : trip,
+      ),
+    )
+  }
+
+  const handleUpdatePlaceVisitPreference = (
+    tripId: string,
+    placeId: string,
+    visitPreference: Place["visitPreference"],
+  ) => {
+    setTrips((prev) =>
+      prev.map((trip) =>
+        trip.id === tripId
+          ? {
+              ...trip,
+              places: trip.places.map((place) => (place.id === placeId ? { ...place, visitPreference } : place)),
+            }
+          : trip,
+      ),
+    )
+  }
+
+  const handleUpdatePlaceImages = (tripId: string, placeId: string, userImages: string[]) => {
+    setTrips((prev) =>
+      prev.map((trip) =>
+        trip.id === tripId
+          ? {
+              ...trip,
+              places: trip.places.map((place) => (place.id === placeId ? { ...place, userImages } : place)),
+            }
+          : trip,
+      ),
+    )
+  }
+
+  const handleUpdateSavedPlaceImages = (placeId: string, userImages: string[]) => {
+    setSavedPlaces((prev) => prev.map((place) => (place.id === placeId ? { ...place, userImages } : place)))
   }
 
   const handleExportData = () => {
@@ -266,6 +316,9 @@ export function TravelPlanner() {
               onRemovePlaceFromTrip={handleRemovePlaceFromTrip}
               onPlaceSelect={handlePlaceSelect}
               onUpdatePlaceNotes={handleUpdatePlaceNotes}
+              onUpdatePlaceTags={handleUpdatePlaceTags}
+              onUpdatePlaceVisitPreference={handleUpdatePlaceVisitPreference}
+              onUpdatePlaceImages={handleUpdatePlaceImages} // Added image update handler
             />
           )}
         </div>
@@ -299,6 +352,7 @@ export function TravelPlanner() {
             isSaved={savedPlaces.some((p) => p.id === selectedPlace.id)}
             trips={trips}
             onAddPlaceToTrip={handleAddPlaceToTrip}
+            onUpdateImages={handleUpdateSavedPlaceImages} // Added image update handler for place details
           />
         )}
       </div>
