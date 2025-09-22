@@ -3,14 +3,25 @@
 import type React from "react"
 
 import { useState, useCallback } from "react"
+import { useSession, signOut } from "next-auth/react"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { SavedPlaces } from "./saved-places"
 import { TripDashboard } from "./trip-dashboard"
 import { PlaceDetails } from "./place-details"
 import { Button } from "@/components/ui/button"
-import { useLocalStorage } from "@/hooks/use-local-storage"
-import { Search, Heart, Calendar, Download, Upload } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Search, Heart, Calendar, Download, Upload, User, LogOut, Database, WifiOff } from "lucide-react"
+import { usePlaces } from "@/hooks/use-places"
+import { useTrips } from "@/hooks/use-trips"
+import { usePreferences } from "@/hooks/use-preferences"
 
 export interface Place {
   id: string
@@ -57,15 +68,29 @@ export interface Trip {
 }
 
 export function TravelPlanner() {
+  const { data: session } = useSession()
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
-  const [savedPlaces, setSavedPlaces] = useLocalStorage<Place[]>("travel-planner-saved-places", [])
-  const [trips, setTrips] = useLocalStorage<Trip[]>("travel-planner-trips", [])
-  const [activeTab, setActiveTab] = useLocalStorage<"search" | "saved" | "trips">("travel-planner-active-tab", "search")
-  const [mapCenter, setMapCenter] = useLocalStorage<{ lat: number; lng: number }>("travel-planner-map-center", {
-    lat: 40.7128,
-    lng: -74.006,
-  })
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
+
+  const {
+    places: savedPlaces,
+    savePlace,
+    removePlace,
+    updatePlaceImages: updateSavedPlaceImages,
+    isAuthenticated: placesAuth,
+  } = usePlaces()
+  const {
+    trips,
+    createTrip,
+    updateTrip,
+    deleteTrip,
+    addPlaceToTrip,
+    removePlaceFromTrip,
+    isAuthenticated: tripsAuth,
+  } = useTrips()
+  const { preferences, setMapCenter, setActiveTab, isAuthenticated: prefsAuth } = usePreferences()
+
+  const { mapCenter, activeTab } = preferences
 
   const handlePlaceSelect = useCallback(
     (place: Place) => {
@@ -76,116 +101,98 @@ export function TravelPlanner() {
     [setMapCenter],
   )
 
-  const handleSavePlace = (place: Place) => {
-    const isAlreadySaved = savedPlaces.some((p) => p.id === place.id)
-    if (!isAlreadySaved) {
-      setSavedPlaces((prev) => [...prev, { ...place, saved: true }])
+  const handleSavePlace = async (place: Place) => {
+    try {
+      await savePlace(place)
+    } catch (error) {
+      console.error("Failed to save place:", error)
+      // You could add a toast notification here
     }
   }
 
-  const handleRemovePlace = (placeId: string) => {
-    setSavedPlaces((prev) => prev.filter((p) => p.id !== placeId))
-    setTrips((prev) =>
-      prev.map((trip) => ({
-        ...trip,
-        places: trip.places.filter((p) => p.id !== placeId),
-      })),
-    )
-  }
-
-  const handleCreateTrip = (tripData: Omit<Trip, "id" | "createdAt">) => {
-    const newTrip: Trip = {
-      ...tripData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+  const handleRemovePlace = async (placeId: string) => {
+    try {
+      await removePlace(placeId)
+    } catch (error) {
+      console.error("Failed to remove place:", error)
     }
-    setTrips((prev) => [...prev, newTrip])
   }
 
-  const handleUpdateTrip = (tripId: string, updates: Partial<Trip>) => {
-    setTrips((prev) => prev.map((trip) => (trip.id === tripId ? { ...trip, ...updates } : trip)))
+  const handleCreateTrip = async (tripData: Omit<Trip, "id" | "createdAt">) => {
+    try {
+      await createTrip(tripData)
+    } catch (error) {
+      console.error("Failed to create trip:", error)
+    }
   }
 
-  const handleDeleteTrip = (tripId: string) => {
-    setTrips((prev) => prev.filter((trip) => trip.id !== tripId))
+  const handleUpdateTrip = async (tripId: string, updates: Partial<Trip>) => {
+    try {
+      await updateTrip(tripId, updates)
+    } catch (error) {
+      console.error("Failed to update trip:", error)
+    }
   }
 
-  const handleAddPlaceToTrip = (tripId: string, place: Place) => {
-    setTrips((prev) =>
-      prev.map((trip) =>
-        trip.id === tripId && !trip.places.some((p) => p.id === place.id)
-          ? { ...trip, places: [...trip.places, place] }
-          : trip,
-      ),
-    )
+  const handleDeleteTrip = async (tripId: string) => {
+    try {
+      await deleteTrip(tripId)
+    } catch (error) {
+      console.error("Failed to delete trip:", error)
+    }
   }
 
-  const handleRemovePlaceFromTrip = (tripId: string, placeId: string) => {
-    setTrips((prev) =>
-      prev.map((trip) =>
-        trip.id === tripId ? { ...trip, places: trip.places.filter((p) => p.id !== placeId) } : trip,
-      ),
-    )
+  const handleAddPlaceToTrip = async (tripId: string, place: Place) => {
+    try {
+      await addPlaceToTrip(tripId, place)
+    } catch (error) {
+      console.error("Failed to add place to trip:", error)
+    }
   }
 
-  const handleUpdatePlaceNotes = (tripId: string, placeId: string, notes: string) => {
-    setTrips((prev) =>
-      prev.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              places: trip.places.map((place) => (place.id === placeId ? { ...place, notes } : place)),
-            }
-          : trip,
-      ),
-    )
+  const handleRemovePlaceFromTrip = async (tripId: string, placeId: string) => {
+    try {
+      await removePlaceFromTrip(tripId, placeId)
+    } catch (error) {
+      console.error("Failed to remove place from trip:", error)
+    }
   }
 
-  const handleUpdatePlaceTags = (tripId: string, placeId: string, tags: string[]) => {
-    setTrips((prev) =>
-      prev.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              places: trip.places.map((place) => (place.id === placeId ? { ...place, tags } : place)),
-            }
-          : trip,
-      ),
-    )
+  const handleUpdatePlaceNotes = async (tripId: string, placeId: string, notes: string) => {
+    // Find the trip and update the place notes locally for immediate UI feedback
+    const trip = trips.find((t) => t.id === tripId)
+    if (trip) {
+      const updatedPlaces = trip.places.map((place) => (place.id === placeId ? { ...place, notes } : place))
+      await updateTrip(tripId, { ...trip, places: updatedPlaces })
+    }
   }
 
-  const handleUpdatePlaceVisitPreference = (
+  const handleUpdatePlaceTags = async (tripId: string, placeId: string, tags: string[]) => {
+    const trip = trips.find((t) => t.id === tripId)
+    if (trip) {
+      const updatedPlaces = trip.places.map((place) => (place.id === placeId ? { ...place, tags } : place))
+      await updateTrip(tripId, { ...trip, places: updatedPlaces })
+    }
+  }
+
+  const handleUpdatePlaceVisitPreference = async (
     tripId: string,
     placeId: string,
     visitPreference: Place["visitPreference"],
   ) => {
-    setTrips((prev) =>
-      prev.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              places: trip.places.map((place) => (place.id === placeId ? { ...place, visitPreference } : place)),
-            }
-          : trip,
-      ),
-    )
+    const trip = trips.find((t) => t.id === tripId)
+    if (trip) {
+      const updatedPlaces = trip.places.map((place) => (place.id === placeId ? { ...place, visitPreference } : place))
+      await updateTrip(tripId, { ...trip, places: updatedPlaces })
+    }
   }
 
-  const handleUpdatePlaceImages = (tripId: string, placeId: string, userImages: string[]) => {
-    setTrips((prev) =>
-      prev.map((trip) =>
-        trip.id === tripId
-          ? {
-              ...trip,
-              places: trip.places.map((place) => (place.id === placeId ? { ...place, userImages } : place)),
-            }
-          : trip,
-      ),
-    )
-  }
-
-  const handleUpdateSavedPlaceImages = (placeId: string, userImages: string[]) => {
-    setSavedPlaces((prev) => prev.map((place) => (place.id === placeId ? { ...place, userImages } : place)))
+  const handleUpdatePlaceImages = async (tripId: string, placeId: string, userImages: string[]) => {
+    const trip = trips.find((t) => t.id === tripId)
+    if (trip) {
+      const updatedPlaces = trip.places.map((place) => (place.id === placeId ? { ...place, userImages } : place))
+      await updateTrip(tripId, { ...trip, places: updatedPlaces })
+    }
   }
 
   const handleExportData = () => {
@@ -193,7 +200,7 @@ export function TravelPlanner() {
       savedPlaces,
       trips,
       exportDate: new Date().toISOString(),
-      version: "1.0",
+      version: "2.0", // Updated version for database format
     }
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
@@ -211,26 +218,49 @@ export function TravelPlanner() {
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target?.result as string)
+
+        // Import saved places
         if (data.savedPlaces && Array.isArray(data.savedPlaces)) {
-          setSavedPlaces(data.savedPlaces)
+          for (const place of data.savedPlaces) {
+            try {
+              await savePlace(place)
+            } catch (error) {
+              console.error("Failed to import place:", place.name, error)
+            }
+          }
         }
+
+        // Import trips
         if (data.trips && Array.isArray(data.trips)) {
-          setTrips(data.trips)
+          for (const trip of data.trips) {
+            try {
+              await createTrip({
+                name: trip.name,
+                description: trip.description,
+                startDate: trip.startDate,
+                endDate: trip.endDate,
+                places: trip.places || [],
+              })
+            } catch (error) {
+              console.error("Failed to import trip:", trip.name, error)
+            }
+          }
         }
+
         alert("Data imported successfully!")
       } catch (error) {
         alert("Error importing data. Please check the file format.")
       }
     }
     reader.readAsText(file)
-    // Reset the input
     event.target.value = ""
   }
 
   const allTripPlaces = trips.flatMap((trip) => trip.places)
+  const isOnline = placesAuth && tripsAuth && prefsAuth
 
   return (
     <div className="flex h-screen bg-background">
@@ -240,8 +270,8 @@ export function TravelPlanner() {
         <div className="p-6 border-b border-border">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold text-foreground">Travel Planner</h1>
-            {/* Data backup/restore buttons */}
             <div className="flex items-center gap-2">
+              {/* Data backup/restore buttons */}
               <Button size="sm" variant="outline" onClick={handleExportData} title="Export your data">
                 <Download className="w-4 h-4" />
               </Button>
@@ -257,6 +287,38 @@ export function TravelPlanner() {
                   <Upload className="w-4 h-4" />
                 </Button>
               </div>
+
+              {session?.user && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={session.user.image || ""} alt={session.user.name || ""} />
+                        <AvatarFallback>
+                          {session.user.name?.charAt(0) || session.user.email?.charAt(0) || (
+                            <User className="h-4 w-4" />
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <div className="flex items-center justify-start gap-2 p-2">
+                      <div className="flex flex-col space-y-1 leading-none">
+                        {session.user.name && <p className="font-medium">{session.user.name}</p>}
+                        {session.user.email && (
+                          <p className="w-[200px] truncate text-sm text-muted-foreground">{session.user.email}</p>
+                        )}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
           <p className="text-muted-foreground text-sm">Discover and save amazing places for your next adventure</p>
@@ -318,18 +380,29 @@ export function TravelPlanner() {
               onUpdatePlaceNotes={handleUpdatePlaceNotes}
               onUpdatePlaceTags={handleUpdatePlaceTags}
               onUpdatePlaceVisitPreference={handleUpdatePlaceVisitPreference}
-              onUpdatePlaceImages={handleUpdatePlaceImages} // Added image update handler
+              onUpdatePlaceImages={handleUpdatePlaceImages}
             />
           )}
         </div>
 
-        {/* Data persistence status indicator */}
         <div className="px-4 py-2 border-t border-border">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Data saved locally</span>
+            <span>
+              {isOnline ? (
+                <div className="flex items-center gap-1">
+                  <Database className="w-3 h-3" />
+                  Data synced to cloud
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <WifiOff className="w-3 h-3" />
+                  Offline mode
+                </div>
+              )}
+            </span>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>Auto-sync enabled</span>
+              <div className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-yellow-500"}`}></div>
+              <span>{isOnline ? "Connected" : "Local only"}</span>
             </div>
           </div>
         </div>
@@ -352,7 +425,7 @@ export function TravelPlanner() {
             isSaved={savedPlaces.some((p) => p.id === selectedPlace.id)}
             trips={trips}
             onAddPlaceToTrip={handleAddPlaceToTrip}
-            onUpdateImages={handleUpdateSavedPlaceImages} // Added image update handler for place details
+            onUpdateImages={updateSavedPlaceImages}
           />
         )}
       </div>
