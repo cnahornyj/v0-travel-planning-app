@@ -55,7 +55,7 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
   useEffect(() => {
     if (typeof window !== "undefined" && !window.google) {
       const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID}&libraries=places`
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
       script.async = true
       script.defer = true
       script.onload = () => setIsLoaded(true)
