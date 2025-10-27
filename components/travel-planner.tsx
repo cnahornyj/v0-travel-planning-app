@@ -79,7 +79,11 @@ export function TravelPlanner() {
         console.log("[v0] Loaded trips:", tripsData.trips?.length || 0)
 
         setSavedPlaces(placesData.places || [])
-        setTrips(tripsData.trips || [])
+        const tripsWithIds = (tripsData.trips || []).map((trip: any) => ({
+          ...trip,
+          id: trip._id?.toString() || trip.id,
+        }))
+        setTrips(tripsWithIds)
       } catch (error) {
         console.error("[v0] Error loading data:", error)
       } finally {
