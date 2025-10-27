@@ -91,6 +91,44 @@ export async function POST(request: Request) {
   }
 }
 
+// PATCH handler to update place images
+export async function PATCH(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const placeId = searchParams.get("id")
+    const body = await request.json()
+
+    console.log("[v0] PATCH request received for place ID:", placeId)
+
+    if (!placeId || placeId === "undefined") {
+      console.error("[v0] Invalid place ID provided:", placeId)
+      return NextResponse.json({ error: "Valid place ID required" }, { status: 400 })
+    }
+
+    const client = await clientPromise
+    const db = client.db("travel-planner")
+
+    const updateData: any = {}
+    if (body.userImages !== undefined) {
+      updateData.userImages = body.userImages
+    }
+
+    const result = await db.collection("places").updateOne({ id: placeId }, { $set: updateData })
+
+    console.log("[v0] Update result:", result.modifiedCount, "document(s) modified")
+
+    if (result.matchedCount === 0) {
+      console.warn("[v0] No place found with ID:", placeId)
+      return NextResponse.json({ error: "Place not found" }, { status: 404 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[v0] Error updating place:", error)
+    return NextResponse.json({ error: "Failed to update place" }, { status: 500 })
+  }
+}
+
 // DELETE place
 export async function DELETE(request: Request) {
   try {

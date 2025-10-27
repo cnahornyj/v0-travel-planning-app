@@ -310,17 +310,34 @@ export function TravelPlanner() {
   }
 
   const handleUpdateSavedPlaceImages = async (placeId: string, userImages: string[]) => {
-    setSavedPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, userImages } : p)))
+    setIsSyncing(true)
+    try {
+      const response = await fetch(`/api/places?id=${placeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userImages }),
+      })
 
-    // Also update in any trips that contain this place
-    setTrips((prev) =>
-      prev.map((trip) => ({
-        ...trip,
-        places: trip.places.map((p) => (p.id === placeId ? { ...p, userImages } : p)),
-      })),
-    )
+      if (response.ok) {
+        setSavedPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, userImages } : p)))
 
-    console.log("[v0] Updated images for place:", placeId)
+        // Also update in any trips that contain this place
+        setTrips((prev) =>
+          prev.map((trip) => ({
+            ...trip,
+            places: trip.places.map((p) => (p.id === placeId ? { ...p, userImages } : p)),
+          })),
+        )
+
+        console.log("[v0] Updated images for place:", placeId)
+      } else {
+        console.error("[v0] Failed to update place images, response status:", response.status)
+      }
+    } catch (error) {
+      console.error("[v0] Error updating place images:", error)
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   const handleExportData = () => {
