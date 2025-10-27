@@ -8,8 +8,16 @@ export async function GET() {
     const db = client.db("travel-planner")
     const places = await db.collection("places").find({}).toArray()
 
-    console.log("[v0] GET places - First place from DB:", places[0])
     console.log("[v0] GET places - Total places:", places.length)
+    if (places.length > 0) {
+      console.log("[v0] GET places - First place structure:", {
+        id: places[0].id,
+        name: places[0].name,
+        hasUserImages: !!places[0].userImages,
+        userImagesCount: places[0].userImages?.length || 0,
+        userImages: places[0].userImages,
+      })
+    }
 
     return NextResponse.json({ places })
   } catch (error) {
@@ -99,7 +107,7 @@ export async function PATCH(request: Request) {
     const body = await request.json()
 
     console.log("[v0] PATCH request received for place ID:", placeId)
-    console.log("[v0] PATCH body:", body)
+    console.log("[v0] PATCH body userImages:", body.userImages)
 
     if (!placeId || placeId === "undefined") {
       console.error("[v0] Invalid place ID provided:", placeId)
@@ -111,9 +119,9 @@ export async function PATCH(request: Request) {
 
     // Check if place exists
     const existingPlace = await db.collection("places").findOne({ id: placeId })
+    console.log("[v0] Existing place found:", !!existingPlace)
 
     if (!existingPlace) {
-      // Place doesn't exist, create it with the provided data
       console.log("[v0] Place not found, creating new place with images")
 
       if (!body.place) {
@@ -143,20 +151,25 @@ export async function PATCH(request: Request) {
         createdAt: new Date().toISOString(),
       }
 
+      console.log("[v0] Creating new place with userImages:", newPlace.userImages)
       await db.collection("places").insertOne(newPlace)
-      console.log("[v0] New place created with images")
+      console.log("[v0] New place created successfully")
       return NextResponse.json({ success: true })
     }
 
-    // Place exists, update it
     const updateData: any = {}
     if (body.userImages !== undefined) {
       updateData.userImages = body.userImages
+      console.log("[v0] Updating userImages to:", body.userImages)
     }
 
     const result = await db.collection("places").updateOne({ id: placeId }, { $set: updateData })
 
-    console.log("[v0] Update result:", result.modifiedCount, "document(s) modified")
+    console.log("[v0] Update result - matched:", result.matchedCount, "modified:", result.modifiedCount)
+
+    // Verify the update by fetching the place again
+    const updatedPlace = await db.collection("places").findOne({ id: placeId })
+    console.log("[v0] After update - userImages:", updatedPlace?.userImages)
 
     return NextResponse.json({ success: true })
   } catch (error) {
