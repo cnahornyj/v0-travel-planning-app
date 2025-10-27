@@ -432,7 +432,8 @@ export function TripDashboard({
                             <img
                               src={place.photos[0] || "/placeholder.svg"}
                               alt={place.name}
-                              className="w-32 h-32 object-cover rounded-md cursor-pointer"
+                              className="object-cover rounded-md cursor-pointer"
+                              style={{ height: "calc(var(--spacing) * 64)" }}
                               onClick={() => onPlaceSelect(place)}
                             />
                           </div>
