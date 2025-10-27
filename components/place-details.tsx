@@ -33,6 +33,7 @@ export function PlaceDetails({
   const [showTripSelection, setShowTripSelection] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showImageUpload, setShowImageUpload] = useState(false)
+  const [imageUrl, setImageUrl] = useState("")
 
   const allImages = [...(detailedPlace.photos || []), ...(detailedPlace.userImages || [])]
 
@@ -184,6 +185,16 @@ export function PlaceDetails({
     )
   }
 
+  const handleAddImageFromUrl = () => {
+    if (!imageUrl.trim() || !onUpdateImages) return
+
+    const updatedImages = [...(detailedPlace.userImages || []), imageUrl.trim()]
+    setDetailedPlace((prev) => ({ ...prev, userImages: updatedImages }))
+    onUpdateImages(detailedPlace.id, updatedImages)
+    setImageUrl("")
+    setShowImageUpload(false)
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -295,6 +306,48 @@ export function PlaceDetails({
                   <p className="text-sm text-muted-foreground">{review.text}</p>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {onUpdateImages && (
+            <div className="space-y-2">
+              {!showImageUpload ? (
+                <Button variant="outline" size="sm" onClick={() => setShowImageUpload(true)} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Image
+                </Button>
+              ) : (
+                <div className="space-y-2 p-4 border rounded-lg">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter image URL"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleAddImageFromUrl()
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border rounded-md text-sm"
+                    />
+                    <Button size="sm" onClick={handleAddImageFromUrl} disabled={!imageUrl.trim()}>
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" asChild className="flex-1 bg-transparent">
+                      <label className="cursor-pointer">
+                        Upload File
+                        <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                      </label>
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowImageUpload(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
