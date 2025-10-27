@@ -309,6 +309,20 @@ export function TravelPlanner() {
     }
   }
 
+  const handleUpdateSavedPlaceImages = async (placeId: string, userImages: string[]) => {
+    setSavedPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, userImages } : p)))
+
+    // Also update in any trips that contain this place
+    setTrips((prev) =>
+      prev.map((trip) => ({
+        ...trip,
+        places: trip.places.map((p) => (p.id === placeId ? { ...p, userImages } : p)),
+      })),
+    )
+
+    console.log("[v0] Updated images for place:", placeId)
+  }
+
   const handleExportData = () => {
     const data = {
       places: savedPlaces,
@@ -463,6 +477,7 @@ export function TravelPlanner() {
           isSaved={savedPlaces.some((p) => p.id === selectedPlace.id)}
           trips={trips}
           onAddPlaceToTrip={handleAddPlaceToTrip}
+          onUpdateImages={handleUpdateSavedPlaceImages}
         />
       )}
 
