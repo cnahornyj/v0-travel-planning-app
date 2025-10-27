@@ -1,28 +1,21 @@
-import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { type NextRequest, NextResponse } from "next/server"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { password } = await request.json()
 
-    // Get the password from environment variable
-    const correctPassword = process.env.SITE_PASSWORD || "changeme"
+    const correctPassword = process.env.SITE_PASSWORD
 
-    if (password === correctPassword) {
-      // Set authentication cookie (expires in 7 days)
-      const cookieStore = await cookies()
-      cookieStore.set("site-auth", "authenticated", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      })
-
-      return NextResponse.json({ success: true })
+    if (!correctPassword) {
+      return NextResponse.json({ success: false, message: "Password not configured" }, { status: 500 })
     }
 
-    return NextResponse.json({ error: "Invalid password" }, { status: 401 })
+    if (password === correctPassword) {
+      return NextResponse.json({ success: true })
+    } else {
+      return NextResponse.json({ success: false, message: "Incorrect password" }, { status: 401 })
+    }
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 })
   }
 }
