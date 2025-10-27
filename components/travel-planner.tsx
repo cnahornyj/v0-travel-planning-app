@@ -312,14 +312,26 @@ export function TravelPlanner() {
   const handleUpdateSavedPlaceImages = async (placeId: string, userImages: string[]) => {
     setIsSyncing(true)
     try {
+      // Find the place data to send with the request
+      const place = savedPlaces.find((p) => p.id === placeId) || selectedPlace
+
       const response = await fetch(`/api/places?id=${placeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userImages }),
+        body: JSON.stringify({ userImages, place }),
       })
 
       if (response.ok) {
-        setSavedPlaces((prev) => prev.map((p) => (p.id === placeId ? { ...p, userImages } : p)))
+        setSavedPlaces((prev) => {
+          const existing = prev.find((p) => p.id === placeId)
+          if (existing) {
+            return prev.map((p) => (p.id === placeId ? { ...p, userImages } : p))
+          } else if (place) {
+            // Place wasn't saved yet, add it now
+            return [...prev, { ...place, userImages, saved: true }]
+          }
+          return prev
+        })
 
         // Also update in any trips that contain this place
         setTrips((prev) =>
@@ -331,7 +343,8 @@ export function TravelPlanner() {
 
         console.log("[v0] Updated images for place:", placeId)
       } else {
-        console.error("[v0] Failed to update place images, response status:", response.status)
+        const errorData = await response.json()
+        console.error("[v0] Failed to update place images:", errorData)
       }
     } catch (error) {
       console.error("[v0] Error updating place images:", error)

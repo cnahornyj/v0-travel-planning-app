@@ -91,7 +91,7 @@ export async function POST(request: Request) {
   }
 }
 
-// PATCH handler to update place images
+// PATCH handler to use upsert - creates place if it doesn't exist
 export async function PATCH(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -99,6 +99,7 @@ export async function PATCH(request: Request) {
     const body = await request.json()
 
     console.log("[v0] PATCH request received for place ID:", placeId)
+    console.log("[v0] PATCH body:", body)
 
     if (!placeId || placeId === "undefined") {
       console.error("[v0] Invalid place ID provided:", placeId)
@@ -108,6 +109,46 @@ export async function PATCH(request: Request) {
     const client = await clientPromise
     const db = client.db("travel-planner")
 
+    // Check if place exists
+    const existingPlace = await db.collection("places").findOne({ id: placeId })
+
+    if (!existingPlace) {
+      // Place doesn't exist, create it with the provided data
+      console.log("[v0] Place not found, creating new place with images")
+
+      if (!body.place) {
+        return NextResponse.json({ error: "Place data required for new place" }, { status: 400 })
+      }
+
+      const newPlace = {
+        id: placeId,
+        name: body.place.name || "",
+        address: body.place.address || "",
+        lat: body.place.lat || 0,
+        lng: body.place.lng || 0,
+        type: body.place.type || null,
+        rating: body.place.rating || null,
+        photos: Array.isArray(body.place.photos) ? body.place.photos : [],
+        userImages: Array.isArray(body.userImages) ? body.userImages : [],
+        saved: true,
+        notes: body.place.notes || "",
+        tags: Array.isArray(body.place.tags) ? body.place.tags : [],
+        visitPreference: body.place.visitPreference || null,
+        phone: body.place.phone || null,
+        website: body.place.website || null,
+        openingHours: body.place.openingHours || null,
+        isOpen: body.place.isOpen || null,
+        priceLevel: body.place.priceLevel || null,
+        reviews: Array.isArray(body.place.reviews) ? body.place.reviews.slice(0, 5) : [],
+        createdAt: new Date().toISOString(),
+      }
+
+      await db.collection("places").insertOne(newPlace)
+      console.log("[v0] New place created with images")
+      return NextResponse.json({ success: true })
+    }
+
+    // Place exists, update it
     const updateData: any = {}
     if (body.userImages !== undefined) {
       updateData.userImages = body.userImages
@@ -116,11 +157,6 @@ export async function PATCH(request: Request) {
     const result = await db.collection("places").updateOne({ id: placeId }, { $set: updateData })
 
     console.log("[v0] Update result:", result.modifiedCount, "document(s) modified")
-
-    if (result.matchedCount === 0) {
-      console.warn("[v0] No place found with ID:", placeId)
-      return NextResponse.json({ error: "Place not found" }, { status: 404 })
-    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
