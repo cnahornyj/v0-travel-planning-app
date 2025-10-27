@@ -427,6 +427,28 @@ export function TripDashboard({
                     <Card key={place.id} className="p-3">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 cursor-pointer" onClick={() => onPlaceSelect(place)}>
+                          {place.photos && place.photos.length > 0 && (
+                            <div className="mb-3">
+                              {place.photos.length === 1 ? (
+                                <img
+                                  src={place.photos[0] || "/placeholder.svg"}
+                                  alt={place.name}
+                                  className="w-full h-32 object-cover rounded-md"
+                                />
+                              ) : (
+                                <div className="grid grid-cols-2 gap-2">
+                                  {place.photos.slice(0, 4).map((photo, index) => (
+                                    <img
+                                      key={index}
+                                      src={photo || "/placeholder.svg"}
+                                      alt={`${place.name} ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded-md"
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <div className="flex items-start justify-between mb-2">
                             <h5 className="font-medium">{place.name}</h5>
                             {place.visitPreference && (
