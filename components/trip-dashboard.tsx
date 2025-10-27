@@ -424,35 +424,35 @@ export function TripDashboard({
                 <div className="space-y-2">
                   <h4 className="font-semibold">Places in this trip:</h4>
                   {trip.places.map((place) => (
-                    <Card key={place.id} className="p-3">
-                      <div className="flex gap-4">
-                        {/* Photo on the left */}
+                    <Card key={place.id} className="p-4">
+                      <div className="flex gap-4 h-full">
+                        {/* Photo on the left with fixed size */}
                         {place.photos && place.photos.length > 0 && (
                           <div className="flex-shrink-0">
                             <img
                               src={place.photos[0] || "/placeholder.svg"}
                               alt={place.name}
-                              className="object-cover rounded-md cursor-pointer"
-                              style={{ height: "calc(var(--spacing) * 64)" }}
+                              className="w-32 h-32 object-cover rounded-md cursor-pointer"
                               onClick={() => onPlaceSelect(place)}
                             />
                           </div>
                         )}
 
-                        {/* Info on the right */}
-                        <div className="flex-1 flex items-start justify-between gap-4">
-                          <div className="flex-1 cursor-pointer" onClick={() => onPlaceSelect(place)}>
-                            <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium">{place.name}</h5>
+                        {/* Info on the right with flex column layout */}
+                        <div className="flex-1 flex flex-col min-w-0">
+                          {/* Top section: place info */}
+                          <div className="flex-1 cursor-pointer mb-3" onClick={() => onPlaceSelect(place)}>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h5 className="font-medium truncate">{place.name}</h5>
                               {place.visitPreference && (
-                                <Badge variant="outline" className="flex items-center gap-1">
+                                <Badge variant="outline" className="flex items-center gap-1 flex-shrink-0">
                                   {getVisitPreferenceIcon(place.visitPreference)}
                                   {place.visitPreference}
                                 </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                              <MapPin className="h-3 w-3" />
+                              <MapPin className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate">{place.address}</span>
                             </div>
                             {place.rating && (
@@ -479,7 +479,8 @@ export function TripDashboard({
                             )}
                           </div>
 
-                          <div className="flex flex-col gap-2">
+                          {/* Bottom section: buttons aligned to the right */}
+                          <div className="flex gap-2 justify-end">
                             <Button
                               size="sm"
                               variant="outline"
