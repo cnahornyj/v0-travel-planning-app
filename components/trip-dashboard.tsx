@@ -425,119 +425,112 @@ export function TripDashboard({
                   <h4 className="font-semibold">Places in this trip:</h4>
                   {trip.places.map((place) => (
                     <Card key={place.id} className="p-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 cursor-pointer" onClick={() => onPlaceSelect(place)}>
-                          {place.photos && place.photos.length > 0 && (
-                            <div className="mb-3">
-                              {place.photos.length === 1 ? (
-                                <img
-                                  src={place.photos[0] || "/placeholder.svg"}
-                                  alt={place.name}
-                                  className="w-full h-32 object-cover rounded-md"
-                                />
-                              ) : (
-                                <div className="grid grid-cols-2 gap-2">
-                                  {place.photos.slice(0, 4).map((photo, index) => (
-                                    <img
-                                      key={index}
-                                      src={photo || "/placeholder.svg"}
-                                      alt={`${place.name} ${index + 1}`}
-                                      className="w-full h-24 object-cover rounded-md"
-                                    />
-                                  ))}
-                                </div>
+                      <div className="flex gap-4">
+                        {/* Photo on the left */}
+                        {place.photos && place.photos.length > 0 && (
+                          <div className="flex-shrink-0">
+                            <img
+                              src={place.photos[0] || "/placeholder.svg"}
+                              alt={place.name}
+                              className="w-32 h-32 object-cover rounded-md cursor-pointer"
+                              onClick={() => onPlaceSelect(place)}
+                            />
+                          </div>
+                        )}
+
+                        {/* Info on the right */}
+                        <div className="flex-1 flex items-start justify-between gap-4">
+                          <div className="flex-1 cursor-pointer" onClick={() => onPlaceSelect(place)}>
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-medium">{place.name}</h5>
+                              {place.visitPreference && (
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  {getVisitPreferenceIcon(place.visitPreference)}
+                                  {place.visitPreference}
+                                </Badge>
                               )}
                             </div>
-                          )}
-                          <div className="flex items-start justify-between mb-2">
-                            <h5 className="font-medium">{place.name}</h5>
-                            {place.visitPreference && (
-                              <Badge variant="outline" className="flex items-center gap-1">
-                                {getVisitPreferenceIcon(place.visitPreference)}
-                                {place.visitPreference}
-                              </Badge>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                              <MapPin className="h-3 w-3" />
+                              <span className="truncate">{place.address}</span>
+                            </div>
+                            {place.rating && (
+                              <div className="flex items-center gap-1 mb-2">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-sm">{place.rating}</span>
+                              </div>
+                            )}
+                            {place.notes && (
+                              <div className="text-sm text-muted-foreground bg-muted p-2 rounded mt-2">
+                                <FileText className="h-3 w-3 inline mr-1" />
+                                {place.notes}
+                              </div>
+                            )}
+                            {place.tags && place.tags.length > 0 && (
+                              <div className="flex gap-1 mt-2 flex-wrap">
+                                {place.tags.map((tag) => (
+                                  <Badge key={tag} variant="secondary" className="text-xs">
+                                    <Tag className="h-3 w-3 mr-1" />
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <MapPin className="h-3 w-3" />
-                            <span className="truncate">{place.address}</span>
-                          </div>
-                          {place.rating && (
-                            <div className="flex items-center gap-1 mb-2">
-                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm">{place.rating}</span>
-                            </div>
-                          )}
-                          {place.notes && (
-                            <div className="text-sm text-muted-foreground bg-muted p-2 rounded mt-2">
-                              <FileText className="h-3 w-3 inline mr-1" />
-                              {place.notes}
-                            </div>
-                          )}
-                          {place.tags && place.tags.length > 0 && (
-                            <div className="flex gap-1 mt-2 flex-wrap">
-                              {place.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  <Tag className="h-3 w-3 mr-1" />
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
 
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              setEditingNotes({
-                                tripId: trip.id,
-                                placeId: place.id,
-                                notes: place.notes || "",
-                              })
-                            }
-                          >
-                            <FileText className="h-3 w-3" />
-                          </Button>
-                          {onUpdatePlaceTags && (
+                          <div className="flex flex-col gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() =>
-                                setEditingTags({
+                                setEditingNotes({
                                   tripId: trip.id,
                                   placeId: place.id,
-                                  tags: place.tags || [],
-                                  newTag: "",
+                                  notes: place.notes || "",
                                 })
                               }
                             >
-                              <Tag className="h-3 w-3" />
+                              <FileText className="h-3 w-3" />
                             </Button>
-                          )}
-                          {onUpdatePlaceVisitPreference && (
+                            {onUpdatePlaceTags && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setEditingTags({
+                                    tripId: trip.id,
+                                    placeId: place.id,
+                                    tags: place.tags || [],
+                                    newTag: "",
+                                  })
+                                }
+                              >
+                                <Tag className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {onUpdatePlaceVisitPreference && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setEditingVisitPreference({
+                                    tripId: trip.id,
+                                    placeId: place.id,
+                                    preference: place.visitPreference || "anytime",
+                                  })
+                                }
+                              >
+                                <Clock className="h-3 w-3" />
+                              </Button>
+                            )}
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                setEditingVisitPreference({
-                                  tripId: trip.id,
-                                  placeId: place.id,
-                                  preference: place.visitPreference || "anytime",
-                                })
-                              }
+                              variant="destructive"
+                              onClick={() => onRemovePlaceFromTrip(trip.id, place.id)}
                             >
-                              <Clock className="h-3 w-3" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => onRemovePlaceFromTrip(trip.id, place.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
