@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { Place } from "./travel-planner"
-import * as google from "googlemaps"
+import { google } from "google-maps"
+
+declare global {
+  interface Window {
+    google: typeof google
+  }
+}
 
 interface GoogleMapProps {
   center: { lat: number; lng: number }
@@ -52,13 +58,20 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
 
   useEffect(() => {
     if (typeof window !== "undefined" && !window.google) {
-      const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
-      script.async = true
-      script.defer = true
-      script.onload = () => setIsLoaded(true)
-      document.head.appendChild(script)
-    } else if (window.google) {
+      fetch("/api/maps-config")
+        .then((res) => res.json())
+        .then((data) => {
+          const script = document.createElement("script")
+          script.src = data.scriptUrl
+          script.async = true
+          script.defer = true
+          script.onload = () => setIsLoaded(true)
+          document.head.appendChild(script)
+        })
+        .catch((error) => {
+          console.error("Failed to load Google Maps configuration:", error)
+        })
+    } else if (typeof window !== "undefined" && window.google) {
       setIsLoaded(true)
     }
   }, [])
