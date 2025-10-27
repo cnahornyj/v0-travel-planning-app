@@ -13,6 +13,8 @@ interface SavedPlacesProps {
 }
 
 export function SavedPlaces({ places, onPlaceSelect, onRemovePlace }: SavedPlacesProps) {
+  console.log("[v0] SavedPlaces - First place structure:", places[0])
+
   const getCurrentOpeningStatus = (place: Place) => {
     if (place.isOpen === undefined) return null
     return place.isOpen
@@ -138,6 +140,11 @@ export function SavedPlaces({ places, onPlaceSelect, onRemovePlace }: SavedPlace
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation()
+                    console.log("[v0] Attempting to delete place:", {
+                      id: place.id,
+                      name: place.name,
+                      fullPlace: place,
+                    })
                     onRemovePlace(place.id)
                   }}
                   className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"

@@ -8,6 +8,9 @@ export async function GET() {
     const db = client.db("travel-planner")
     const places = await db.collection("places").find({}).toArray()
 
+    console.log("[v0] GET places - First place from DB:", places[0])
+    console.log("[v0] GET places - Total places:", places.length)
+
     return NextResponse.json({ places })
   } catch (error) {
     console.error("[v0] Error fetching places:", error)
@@ -94,14 +97,23 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url)
     const placeId = searchParams.get("id")
 
-    if (!placeId) {
-      return NextResponse.json({ error: "Place ID required" }, { status: 400 })
+    console.log("[v0] DELETE request received for place ID:", placeId)
+
+    if (!placeId || placeId === "undefined") {
+      console.error("[v0] Invalid place ID provided:", placeId)
+      return NextResponse.json({ error: "Valid place ID required" }, { status: 400 })
     }
 
     const client = await clientPromise
     const db = client.db("travel-planner")
 
-    await db.collection("places").deleteOne({ id: placeId })
+    const result = await db.collection("places").deleteOne({ id: placeId })
+    console.log("[v0] Delete result:", result.deletedCount, "document(s) deleted")
+
+    if (result.deletedCount === 0) {
+      console.warn("[v0] No place found with ID:", placeId)
+      return NextResponse.json({ error: "Place not found" }, { status: 404 })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

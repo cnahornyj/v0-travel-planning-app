@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Search, MapPin, Star, Heart, Plus, Globe, Calendar } from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
-import type { google } from "google-maps"
 
 interface PlaceSearchProps {
   onPlaceSelect: (place: Place) => void
@@ -59,14 +58,14 @@ export function PlaceSearch({
 
     try {
       if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.log("[v0] Google Maps API not loaded yet")
         return
       }
 
       const service = new window.google.maps.places.PlacesService(document.createElement("div"))
 
-      const request: google.maps.places.TextSearchRequest = {
+      const request: any = {
         query: query + " city",
-        type: "locality" as any,
       }
 
       service.textSearch(request, (results, status) => {
@@ -87,6 +86,7 @@ export function PlaceSearch({
             searchPlaces("", selectedType || undefined, newLocation)
           }
         } else {
+          console.log("[v0] Location search failed, using fallback")
           const fallbackLocation = {
             lat: 0,
             lng: 0,
@@ -99,7 +99,7 @@ export function PlaceSearch({
         }
       })
     } catch (error) {
-      console.error("Error searching location:", error)
+      console.error("[v0] Error searching location:", error)
     }
   }
 
@@ -108,6 +108,7 @@ export function PlaceSearch({
 
     try {
       if (!window.google || !window.google.maps || !window.google.maps.places) {
+        console.log("[v0] Google Maps API not loaded yet")
         setIsLoading(false)
         return
       }
@@ -126,7 +127,7 @@ export function PlaceSearch({
         searchQuery = `${query} in ${location.name}`
       }
 
-      const request: google.maps.places.TextSearchRequest = {
+      const request: any = {
         query: searchQuery,
       }
 
@@ -135,11 +136,12 @@ export function PlaceSearch({
         request.radius = 50000
       }
 
-      if (type) {
-        request.type = type as any
-      }
+      console.log("[v0] Searching places with query:", searchQuery)
 
       service.textSearch(request, (results, status) => {
+        console.log("[v0] Search status:", status)
+        console.log("[v0] Search results count:", results?.length || 0)
+
         if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
           const places: Place[] = results.slice(0, 10).map((place, index) => ({
             id: place.place_id || `place-${index}`,
@@ -153,14 +155,16 @@ export function PlaceSearch({
             isOpen: place.opening_hours?.isOpen?.(),
           }))
 
+          console.log("[v0] Processed places:", places.length)
           setSearchResults(places)
         } else {
+          console.log("[v0] No results found or search failed")
           setSearchResults([])
         }
         setIsLoading(false)
       })
     } catch (error) {
-      console.error("Error searching places:", error)
+      console.error("[v0] Error searching places:", error)
       setIsLoading(false)
     }
   }

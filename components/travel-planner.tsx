@@ -123,6 +123,12 @@ export function TravelPlanner() {
   }
 
   const handleRemovePlace = async (placeId: string) => {
+    if (!placeId || placeId === "undefined") {
+      console.error("[v0] Cannot delete place with invalid ID:", placeId)
+      return
+    }
+
+    console.log("[v0] Attempting to delete place with ID:", placeId)
     setIsSyncing(true)
     try {
       const response = await fetch(`/api/places?id=${placeId}`, {
@@ -138,6 +144,8 @@ export function TravelPlanner() {
           })),
         )
         console.log("[v0] Place removed successfully")
+      } else {
+        console.error("[v0] Failed to delete place, response status:", response.status)
       }
     } catch (error) {
       console.error("[v0] Error removing place:", error)
