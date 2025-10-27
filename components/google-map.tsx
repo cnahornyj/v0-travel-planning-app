@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { Place } from "./travel-planner"
-import { google } from "google-maps"
 
 declare global {
   interface Window {
-    google: typeof google
+    google: any
   }
 }
 
@@ -18,6 +17,8 @@ interface GoogleMapProps {
 }
 
 const getPlaceIcon = (type?: string, isSelected = false, isOpen?: boolean) => {
+  if (!window.google?.maps) return undefined
+
   const iconConfig = {
     restaurant: { color: "#ef4444", symbol: "🍽️" },
     tourist_attraction: { color: "#f59e0b", symbol: "🎯" },
@@ -45,40 +46,56 @@ const getPlaceIcon = (type?: string, isSelected = false, isOpen?: boolean) => {
           <text x="16" y="20" textAnchor="middle" fontSize="12">${config.symbol}</text>
         </svg>
       `),
-    scaledSize: new google.maps.Size(32, 32),
-    anchor: new google.maps.Point(16, 32),
+    scaledSize: new window.google.maps.Size(32, 32),
+    anchor: new window.google.maps.Point(16, 32),
   }
 }
 
 export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<google.maps.Map | null>(null)
-  const markersRef = useRef<google.maps.Marker[]>([])
+  const mapInstanceRef = useRef<any>(null)
+  const markersRef = useRef<any[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.google) {
+    if (typeof window !== "undefined" && !window.google?.maps) {
       fetch("/api/maps-config")
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch maps configuration")
+          return res.json()
+        })
         .then((data) => {
           const script = document.createElement("script")
           script.src = data.scriptUrl
           script.async = true
           script.defer = true
-          script.onload = () => setIsLoaded(true)
+          script.onload = () => {
+            setTimeout(() => {
+              if (window.google?.maps) {
+                setIsLoaded(true)
+              } else {
+                setLoadError("Google Maps failed to initialize")
+              }
+            }, 100)
+          }
+          script.onerror = () => {
+            setLoadError("Failed to load Google Maps script")
+          }
           document.head.appendChild(script)
         })
         .catch((error) => {
           console.error("Failed to load Google Maps configuration:", error)
+          setLoadError(error.message)
         })
-    } else if (typeof window !== "undefined" && window.google) {
+    } else if (typeof window !== "undefined" && window.google?.maps) {
       setIsLoaded(true)
     }
   }, [])
 
   useEffect(() => {
-    if (isLoaded && mapRef.current && !mapInstanceRef.current) {
-      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+    if (isLoaded && mapRef.current && !mapInstanceRef.current && window.google?.maps) {
+      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
         center,
         zoom: 13,
         styles: [
@@ -102,13 +119,13 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
   }, [center, selectedPlace])
 
   useEffect(() => {
-    if (!mapInstanceRef.current) return
+    if (!mapInstanceRef.current || !window.google?.maps) return
 
     markersRef.current.forEach((marker) => marker.setMap(null))
     markersRef.current = []
 
     savedPlaces.forEach((place) => {
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: place.lat, lng: place.lng },
         map: mapInstanceRef.current,
         title: place.name,
@@ -148,7 +165,7 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
         .filter(Boolean)
         .join("")
 
-      const infoWindow = new google.maps.InfoWindow({
+      const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div style="padding: 8px; max-width: 250px;">
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${place.name}</h3>
@@ -171,7 +188,7 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
     })
 
     if (selectedPlace && !savedPlaces.some((p) => p.id === selectedPlace.id)) {
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: selectedPlace.lat, lng: selectedPlace.lng },
         map: mapInstanceRef.current,
         title: selectedPlace.name,
@@ -187,7 +204,7 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
             </div>`
           : ""
 
-      const infoWindow = new google.maps.InfoWindow({
+      const infoWindow = new window.google.maps.InfoWindow({
         content: `
           <div style="padding: 8px; max-width: 250px;">
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${selectedPlace.name}</h3>
@@ -203,6 +220,20 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
       markersRef.current.push(marker)
     }
   }, [savedPlaces, selectedPlace, onPlaceSelect])
+
+  if (loadError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <div className="text-center">
+          <p className="text-destructive font-semibold mb-2">Failed to load Google Maps</p>
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Please check your API key configuration and try disabling ad blockers
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isLoaded) {
     return (

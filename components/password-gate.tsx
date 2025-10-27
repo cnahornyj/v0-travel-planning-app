@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,6 +17,13 @@ export function PasswordGate({ children }: PasswordGateProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const isAuth = sessionStorage.getItem("authenticated") === "true"
+    if (isAuth) {
+      setIsAuthenticated(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,14 +50,6 @@ export function PasswordGate({ children }: PasswordGateProps) {
       setError("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  // Check if already authenticated in session
-  if (typeof window !== "undefined" && !isAuthenticated) {
-    const isAuth = sessionStorage.getItem("authenticated") === "true"
-    if (isAuth) {
-      setIsAuthenticated(true)
     }
   }
 
