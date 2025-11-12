@@ -318,6 +318,9 @@ export function TravelPlanner() {
   }
 
   const handleUpdateSavedPlaceImages = async (placeId: string, userImages: string[]) => {
+    console.log("[v0] handleUpdateSavedPlaceImages called for place:", placeId)
+    console.log("[v0] New userImages:", userImages)
+
     setIsSyncing(true)
     try {
       const place = savedPlaces.find((p) => p.id === placeId) || selectedPlace
@@ -329,6 +332,13 @@ export function TravelPlanner() {
       })
 
       if (response.ok) {
+        console.log("[v0] Successfully updated images in database")
+
+        // Update selected place if it's the one being modified
+        if (selectedPlace && selectedPlace.id === placeId) {
+          setSelectedPlace((prev) => (prev ? { ...prev, userImages } : null))
+        }
+
         setSavedPlaces((prev) => {
           const existing = prev.find((p) => p.id === placeId)
           if (existing) {

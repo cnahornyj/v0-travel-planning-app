@@ -68,17 +68,25 @@ export function PlaceDetails({
     }
   }
 
-  const handleAddImageFromUrl = () => {
+  const handleAddImageFromUrl = async () => {
     if (!imageUrl.trim() || !onUpdateImages) return
 
     const updatedImages = [...(detailedPlace.userImages || []), imageUrl.trim()]
+
+    console.log("[v0] Adding image URL:", imageUrl.trim())
+    console.log("[v0] Updated userImages array:", updatedImages)
+
+    // Update local state immediately for UI responsiveness
     setDetailedPlace((prev) => ({ ...prev, userImages: updatedImages }))
-    onUpdateImages(detailedPlace.id, updatedImages)
+
+    // Save to database
+    await onUpdateImages(detailedPlace.id, updatedImages)
+
     setImageUrl("")
     setShowImageUpload(false)
   }
 
-  const handleRemoveImage = (imageIndex: number) => {
+  const handleRemoveImage = async (imageIndex: number) => {
     if (!onUpdateImages) return
 
     const googlePhotosCount = detailedPlace.photos?.length || 0
@@ -86,8 +94,12 @@ export function PlaceDetails({
 
     if (userImageIndex >= 0 && detailedPlace.userImages) {
       const updatedImages = detailedPlace.userImages.filter((_, index) => index !== userImageIndex)
+
+      console.log("[v0] Removing image at index:", userImageIndex)
+      console.log("[v0] Updated userImages array:", updatedImages)
+
       setDetailedPlace((prev) => ({ ...prev, userImages: updatedImages }))
-      onUpdateImages(detailedPlace.id, updatedImages)
+      await onUpdateImages(detailedPlace.id, updatedImages)
 
       if (currentImageIndex >= allImages.length - 1) {
         setCurrentImageIndex(Math.max(0, allImages.length - 2))
@@ -95,7 +107,7 @@ export function PlaceDetails({
     }
   }
 
-  const moveImageUp = (index: number) => {
+  const moveImageUp = async (index: number) => {
     if (index === 0 || !onUpdateImages) return
 
     const googlePhotosCount = detailedPlace.photos?.length || 0
@@ -109,12 +121,14 @@ export function PlaceDetails({
     userImages[userImageIndex] = userImages[userImageIndex - 1]
     userImages[userImageIndex - 1] = temp
 
+    console.log("[v0] Moving image up, new order:", userImages)
+
     setDetailedPlace((prev) => ({ ...prev, userImages: userImages }))
-    onUpdateImages(detailedPlace.id, userImages)
+    await onUpdateImages(detailedPlace.id, userImages)
     setCurrentImageIndex(index - 1)
   }
 
-  const moveImageDown = (index: number) => {
+  const moveImageDown = async (index: number) => {
     if (!onUpdateImages) return
 
     const googlePhotosCount = detailedPlace.photos?.length || 0
@@ -129,8 +143,10 @@ export function PlaceDetails({
     userImages[userImageIndex] = userImages[userImageIndex + 1]
     userImages[userImageIndex + 1] = temp
 
+    console.log("[v0] Moving image down, new order:", userImages)
+
     setDetailedPlace((prev) => ({ ...prev, userImages: userImages }))
-    onUpdateImages(detailedPlace.id, userImages)
+    await onUpdateImages(detailedPlace.id, userImages)
     setCurrentImageIndex(index + 1)
   }
 
