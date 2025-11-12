@@ -11,7 +11,6 @@ import {
   Star,
   Phone,
   Globe,
-  Heart,
   Plus,
   Calendar,
   ChevronLeft,
@@ -26,24 +25,13 @@ import type { Place, Trip } from "./travel-planner"
 interface PlaceDetailsProps {
   place: Place
   onClose: () => void
-  onSave: (place: Place) => void
-  isSaved: boolean
   trips?: Trip[]
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
-  onUpdateImages?: (placeId: string, userImages: string[]) => void
+  onUpdateImages?: (placeId: string, photos: string[]) => void
 }
 
-export function PlaceDetails({
-  place,
-  onClose,
-  onSave,
-  isSaved,
-  trips = [],
-  onAddPlaceToTrip,
-  onUpdateImages,
-}: PlaceDetailsProps) {
+export function PlaceDetails({ place, onClose, trips = [], onAddPlaceToTrip, onUpdateImages }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
-  const [isLoading, setIsLoading] = useState(false)
   const [showTripSelection, setShowTripSelection] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showImageUpload, setShowImageUpload] = useState(false)
@@ -357,19 +345,12 @@ export function PlaceDetails({
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button onClick={() => onSave(detailedPlace)} disabled={isSaved} className="flex-1">
-                <Heart className="mr-2 size-4" />
-                {isSaved ? "Saved" : "Save Place"}
+            {trips.length > 0 && (
+              <Button variant="default" onClick={() => setShowTripSelection(true)} className="w-full">
+                <Plus className="mr-2 size-4" />
+                Add to Trip
               </Button>
-
-              {trips.length > 0 && (
-                <Button variant="outline" onClick={() => setShowTripSelection(true)}>
-                  <Plus className="mr-2 size-4" />
-                  Add to Trip
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </Card>

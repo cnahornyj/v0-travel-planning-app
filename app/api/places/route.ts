@@ -116,6 +116,10 @@ export async function PATCH(request: Request) {
     const existingPlace = await db.collection("places").findOne({ id: placeId })
     console.log("[v0] Existing place found:", !!existingPlace)
 
+    if (existingPlace) {
+      console.log("[v0] Current photos in DB:", existingPlace.photos)
+    }
+
     if (!existingPlace) {
       console.log("[v0] Place not found, creating new place with photos")
 
@@ -155,6 +159,7 @@ export async function PATCH(request: Request) {
     if (body.photos !== undefined) {
       updateData.photos = body.photos
       console.log("[v0] Updating photos array to:", updateData.photos)
+      console.log("[v0] Photos array length:", updateData.photos.length)
     }
 
     const result = await db.collection("places").updateOne({ id: placeId }, { $set: updateData })
@@ -162,9 +167,10 @@ export async function PATCH(request: Request) {
     console.log("[v0] Update result - matched:", result.matchedCount, "modified:", result.modifiedCount)
 
     const updatedPlace = await db.collection("places").findOne({ id: placeId })
+    console.log("[v0] After update - photos count:", updatedPlace?.photos?.length)
     console.log("[v0] After update - photos:", updatedPlace?.photos)
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, place: updatedPlace })
   } catch (error) {
     console.error("[v0] Error updating place:", error)
     return NextResponse.json({ error: "Failed to update place" }, { status: 500 })

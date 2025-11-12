@@ -10,13 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Search, MapPin, Star, Heart, Plus, Globe, Calendar, PlusCircle, Info } from "lucide-react"
+import { Search, MapPin, Star, Plus, Globe, Calendar, PlusCircle, Info } from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
 
 interface PlaceSearchProps {
   onPlaceSelect: (place: Place) => void
-  onSavePlace: (place: Place) => void
-  savedPlaceIds: string[]
   onLocationChange?: (location: { lat: number; lng: number; name: string }) => void
   selectedPlace?: Place | null
   onShowDetails?: () => void
@@ -35,8 +33,6 @@ const PLACE_TYPES = [
 
 export function PlaceSearch({
   onPlaceSelect,
-  onSavePlace,
-  savedPlaceIds,
   onLocationChange,
   selectedPlace,
   onShowDetails,
@@ -208,7 +204,9 @@ export function PlaceSearch({
 
       console.log("[v0] Adding manual place:", manualPlace)
 
-      await onSavePlace(manualPlace)
+      if (onAddPlaceToTrip) {
+        onAddPlaceToTrip("default-trip-id", manualPlace)
+      }
 
       setManualName("")
       setManualAddress("")
@@ -315,18 +313,6 @@ export function PlaceSearch({
                     </div>
 
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onSavePlace(place)
-                        }}
-                        disabled={savedPlaceIds.includes(place.id)}
-                      >
-                        <Heart className="size-4" />
-                      </Button>
-
                       {trips.length > 0 && (
                         <Button
                           size="sm"

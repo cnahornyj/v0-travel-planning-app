@@ -4,11 +4,10 @@ import type React from "react"
 import { useState, useCallback, useEffect } from "react"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
-import { SavedPlaces } from "./saved-places"
 import { TripDashboard } from "./trip-dashboard"
 import { PlaceDetails } from "./place-details"
 import { Button } from "@/components/ui/button"
-import { Search, Heart, Calendar, Download, Upload } from "lucide-react"
+import { Search, Calendar, Download, Upload } from "lucide-react"
 
 export interface Place {
   id: string
@@ -54,9 +53,8 @@ export interface Trip {
 
 export function TravelPlanner() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
-  const [savedPlaces, setSavedPlaces] = useState<Place[]>([])
   const [trips, setTrips] = useState<Trip[]>([])
-  const [activeTab, setActiveTab] = useState<"search" | "saved" | "trips">("search")
+  const [activeTab, setActiveTab] = useState<"search" | "trips">("search")
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 40.7128,
     lng: -74.006,
@@ -68,16 +66,12 @@ export function TravelPlanner() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("[v0] Loading data from MongoDB...")
-        const [placesRes, tripsRes] = await Promise.all([fetch("/api/places"), fetch("/api/trips")])
-
-        const placesData = await placesRes.json()
+        console.log("[v0] Loading trips from MongoDB...")
+        const tripsRes = await fetch("/api/trips")
         const tripsData = await tripsRes.json()
 
-        console.log("[v0] Loaded places:", placesData.places?.length || 0)
         console.log("[v0] Loaded trips:", tripsData.trips?.length || 0)
 
-        setSavedPlaces(placesData.places || [])
         const tripsWithIds = (tripsData.trips || []).map((trip: any) => ({
           ...trip,
           id: trip._id?.toString() || trip.id,
@@ -101,55 +95,6 @@ export function TravelPlanner() {
     },
     [setMapCenter],
   )
-
-  const handleSavePlace = async (place: Place) => {
-    const isAlreadySaved = savedPlaces.some((p) => p.id === place.id)
-    if (!isAlreadySaved) {
-      setIsSyncing(true)
-      try {
-        const response = await fetch("/api/places", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...place, saved: true }),
-        })
-
-        if (response.ok) {
-          setSavedPlaces((prev) => [...prev, { ...place, saved: true }])
-          console.log("[v0] Place saved successfully")
-        }
-      } catch (error) {
-        console.error("[v0] Error saving place:", error)
-      } finally {
-        setIsSyncing(false)
-      }
-    }
-  }
-
-  const handleRemovePlace = async (placeId: string) => {
-    if (!placeId || placeId === "undefined") {
-      console.error("[v0] Cannot delete place with invalid ID:", placeId)
-      return
-    }
-
-    console.log("[v0] Attempting to delete place with ID:", placeId)
-    setIsSyncing(true)
-    try {
-      const response = await fetch(`/api/places?id=${placeId}`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        setSavedPlaces((prev) => prev.filter((p) => p.id !== placeId))
-        console.log("[v0] Place removed from saved places successfully")
-      } else {
-        console.error("[v0] Failed to delete place, response status:", response.status)
-      }
-    } catch (error) {
-      console.error("[v0] Error removing place:", error)
-    } finally {
-      setIsSyncing(false)
-    }
-  }
 
   const handleCreateTrip = async (tripData: Omit<Trip, "id" | "createdAt">) => {
     setIsSyncing(true)
@@ -297,70 +242,44 @@ export function TravelPlanner() {
     }
   }
 
-  const handleUpdatePlaceImages = async (tripId: string, placeId: string, photos: string[]) => {
-    if (!tripId || tripId === "undefined") {
-      console.error("[v0] Cannot update place images with invalid trip ID:", tripId)
-      return
-    }
-
-    const trip = trips.find((t) => t.id === tripId)
-    if (trip) {
-      const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, photos } : p))
-      await handleUpdateTrip(tripId, { places: updatedPlaces })
-    }
-  }
-
-  const handleUpdateSavedPlaceImages = async (placeId: string, photos: string[]) => {
-    console.log("[v0] handleUpdateSavedPlaceImages called for place:", placeId)
+  const handleUpdatePlacePhotos = async (placeId: string, photos: string[]) => {
+    console.log("[v0] handleUpdatePlacePhotos called for place:", placeId)
     console.log("[v0] New photos:", photos)
 
     setIsSyncing(true)
     try {
-      const place =
-        savedPlaces.find((p) => p.id === placeId) ||
-        trips.flatMap((t) => t.places).find((p) => p.id === placeId) ||
-        selectedPlace
+      const place = trips.flatMap((t) => t.places).find((p) => p.id === placeId) || selectedPlace
 
       console.log("[v0] Place found:", place)
-      console.log("[v0] Making API call to update photos...")
 
-      const response = await fetch(`/api/places?id=${placeId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photos, place }),
-      })
+      if (selectedPlace && selectedPlace.id === placeId) {
+        setSelectedPlace((prev) => (prev ? { ...prev, photos } : null))
+      }
 
-      const responseData = await response.json()
-      console.log("[v0] API response:", responseData)
+      const tripsWithPlace = trips.filter((trip) => trip.places.some((p) => p.id === placeId))
 
-      if (response.ok) {
-        console.log("[v0] Successfully updated photos in database")
+      for (const trip of tripsWithPlace) {
+        const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, photos } : p))
 
-        if (selectedPlace && selectedPlace.id === placeId) {
-          setSelectedPlace((prev) => (prev ? { ...prev, photos } : null))
-        }
-
-        setSavedPlaces((prev) => {
-          const existing = prev.find((p) => p.id === placeId)
-          if (existing) {
-            return prev.map((p) => (p.id === placeId ? { ...p, photos } : p))
-          } else if (place) {
-            return [...prev, { ...place, photos, saved: true }]
-          }
-          return prev
+        const response = await fetch(`/api/trips/${trip.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ places: updatedPlaces }),
         })
 
-        setTrips((prev) =>
-          prev.map((trip) => ({
-            ...trip,
-            places: trip.places.map((p) => (p.id === placeId ? { ...p, photos } : p)),
-          })),
-        )
-
-        console.log("[v0] Updated photos for place:", placeId)
-      } else {
-        console.error("[v0] Failed to update place photos, response:", responseData)
+        if (response.ok) {
+          console.log("[v0] Updated photos in trip:", trip.name)
+        }
       }
+
+      setTrips((prev) =>
+        prev.map((trip) => ({
+          ...trip,
+          places: trip.places.map((p) => (p.id === placeId ? { ...p, photos } : p)),
+        })),
+      )
+
+      console.log("[v0] Updated photos for place:", placeId)
     } catch (error) {
       console.error("[v0] Error updating place photos:", error)
     } finally {
@@ -370,7 +289,6 @@ export function TravelPlanner() {
 
   const handleExportData = () => {
     const data = {
-      places: savedPlaces,
       trips: trips,
       exportedAt: new Date().toISOString(),
     }
@@ -393,11 +311,6 @@ export function TravelPlanner() {
     reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target?.result as string)
-        if (data.places) {
-          for (const place of data.places) {
-            await handleSavePlace(place)
-          }
-        }
         if (data.trips) {
           for (const trip of data.trips) {
             await handleCreateTrip(trip)
@@ -420,6 +333,8 @@ export function TravelPlanner() {
       </div>
     )
   }
+
+  const allPlaces = trips.flatMap((trip) => trip.places)
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
@@ -454,14 +369,6 @@ export function TravelPlanner() {
               Search
             </Button>
             <Button
-              variant={activeTab === "saved" ? "default" : "ghost"}
-              onClick={() => setActiveTab("saved")}
-              className="flex-1"
-            >
-              <Heart className="mr-2 size-4" />
-              Saved ({savedPlaces.length})
-            </Button>
-            <Button
               variant={activeTab === "trips" ? "default" : "ghost"}
               onClick={() => setActiveTab("trips")}
               className="flex-1"
@@ -475,20 +382,9 @@ export function TravelPlanner() {
             {activeTab === "search" && (
               <PlaceSearch
                 onPlaceSelect={handlePlaceSelect}
-                onSavePlace={handleSavePlace}
-                savedPlaceIds={savedPlaces.map((p) => p.id)}
                 selectedPlace={selectedPlace}
                 onShowDetails={() => setShowPlaceDetails(true)}
                 onLocationChange={(location) => setMapCenter({ lat: location.lat, lng: location.lng })}
-                trips={trips}
-                onAddPlaceToTrip={handleAddPlaceToTrip}
-              />
-            )}
-            {activeTab === "saved" && (
-              <SavedPlaces
-                places={savedPlaces}
-                onPlaceSelect={handlePlaceSelect}
-                onRemovePlace={handleRemovePlace}
                 trips={trips}
                 onAddPlaceToTrip={handleAddPlaceToTrip}
               />
@@ -504,8 +400,6 @@ export function TravelPlanner() {
                 onUpdatePlaceNotes={handleUpdatePlaceNotes}
                 onUpdatePlaceTags={handleUpdatePlaceTags}
                 onUpdatePlaceVisitPreference={handleUpdatePlaceVisitPreference}
-                onUpdatePlaceImages={handleUpdatePlaceImages}
-                savedPlaces={savedPlaces}
                 onPlaceSelect={handlePlaceSelect}
               />
             )}
@@ -516,7 +410,7 @@ export function TravelPlanner() {
           <GoogleMap
             center={mapCenter}
             selectedPlace={selectedPlace}
-            savedPlaces={savedPlaces}
+            savedPlaces={allPlaces}
             onPlaceSelect={handlePlaceSelect}
           />
         </div>
@@ -526,11 +420,9 @@ export function TravelPlanner() {
         <PlaceDetails
           place={selectedPlace}
           onClose={() => setShowPlaceDetails(false)}
-          onSave={handleSavePlace}
-          isSaved={savedPlaces.some((p) => p.id === selectedPlace.id)}
           trips={trips}
           onAddPlaceToTrip={handleAddPlaceToTrip}
-          onUpdateImages={handleUpdateSavedPlaceImages}
+          onUpdateImages={handleUpdatePlacePhotos}
         />
       )}
 
