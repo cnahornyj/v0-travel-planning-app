@@ -323,7 +323,13 @@ export function TravelPlanner() {
 
     setIsSyncing(true)
     try {
-      const place = savedPlaces.find((p) => p.id === placeId) || selectedPlace
+      const place =
+        savedPlaces.find((p) => p.id === placeId) ||
+        trips.flatMap((t) => t.places).find((p) => p.id === placeId) ||
+        selectedPlace
+
+      console.log("[v0] Place found:", place)
+      console.log("[v0] Making API call to update images...")
 
       const response = await fetch(`/api/places?id=${placeId}`, {
         method: "PATCH",
@@ -331,10 +337,12 @@ export function TravelPlanner() {
         body: JSON.stringify({ userImages, place }),
       })
 
+      const responseData = await response.json()
+      console.log("[v0] API response:", responseData)
+
       if (response.ok) {
         console.log("[v0] Successfully updated images in database")
 
-        // Update selected place if it's the one being modified
         if (selectedPlace && selectedPlace.id === placeId) {
           setSelectedPlace((prev) => (prev ? { ...prev, userImages } : null))
         }
@@ -358,8 +366,7 @@ export function TravelPlanner() {
 
         console.log("[v0] Updated images for place:", placeId)
       } else {
-        const errorData = await response.json()
-        console.error("[v0] Failed to update place images:", errorData)
+        console.error("[v0] Failed to update place images, response:", responseData)
       }
     } catch (error) {
       console.error("[v0] Error updating place images:", error)

@@ -74,13 +74,18 @@ export function PlaceDetails({
     const updatedImages = [...(detailedPlace.userImages || []), imageUrl.trim()]
 
     console.log("[v0] Adding image URL:", imageUrl.trim())
+    console.log("[v0] Place ID:", detailedPlace.id)
     console.log("[v0] Updated userImages array:", updatedImages)
+    console.log("[v0] Full place object:", detailedPlace)
 
-    // Update local state immediately for UI responsiveness
     setDetailedPlace((prev) => ({ ...prev, userImages: updatedImages }))
 
-    // Save to database
-    await onUpdateImages(detailedPlace.id, updatedImages)
+    try {
+      await onUpdateImages(detailedPlace.id, updatedImages)
+      console.log("[v0] Image saved successfully")
+    } catch (error) {
+      console.error("[v0] Error saving image:", error)
+    }
 
     setImageUrl("")
     setShowImageUpload(false)
