@@ -461,6 +461,7 @@ export function TravelPlanner() {
                 savedPlaceIds={savedPlaces.map((p) => p.id)}
                 selectedPlace={selectedPlace}
                 onShowDetails={() => setShowPlaceDetails(true)}
+                onLocationChange={(location) => setMapCenter({ lat: location.lat, lng: location.lng })}
                 trips={trips}
                 onAddPlaceToTrip={handleAddPlaceToTrip}
               />
