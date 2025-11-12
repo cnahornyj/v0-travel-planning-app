@@ -141,13 +141,7 @@ export function TravelPlanner() {
 
       if (response.ok) {
         setSavedPlaces((prev) => prev.filter((p) => p.id !== placeId))
-        setTrips((prev) =>
-          prev.map((trip) => ({
-            ...trip,
-            places: trip.places.filter((p) => p.id !== placeId),
-          })),
-        )
-        console.log("[v0] Place removed successfully")
+        console.log("[v0] Place removed from saved places successfully")
       } else {
         console.error("[v0] Failed to delete place, response status:", response.status)
       }
