@@ -399,7 +399,7 @@ export function TravelPlanner() {
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="flex w-96 flex-col border-r">
+        <div className="flex w-[28rem] flex-col border-r">
           <div className="flex border-b">
             <Button
               variant={activeTab === "search" ? "default" : "ghost"}

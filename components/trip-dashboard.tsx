@@ -386,30 +386,30 @@ export function TripDashboard({
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Places in this trip:</h4>
                   {trip.places.map((place) => (
-                    <Card key={place.id} className="flex gap-3 p-3">
+                    <Card key={place.id} className="flex gap-4 p-4">
                       {place.photos && place.photos.length > 0 && (
                         <div className="flex-shrink-0">
                           <img
                             src={place.photos[0] || "/placeholder.svg"}
                             alt={place.name}
-                            className="size-16 cursor-pointer rounded object-cover"
+                            className="size-32 cursor-pointer rounded-lg object-cover"
                             onClick={() => onPlaceSelect(place)}
                           />
                         </div>
                       )}
 
-                      <div className="flex flex-1 flex-col gap-2">
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <div className="cursor-pointer" onClick={() => onPlaceSelect(place)}>
-                          <div className="flex items-start justify-between">
-                            <h5 className="font-medium leading-tight">{place.name}</h5>
+                          <div className="flex items-start justify-between gap-2">
+                            <h5 className="font-semibold leading-tight">{place.name}</h5>
                             {place.visitPreference && (
-                              <Badge variant="outline" className="gap-1 text-xs">
+                              <Badge variant="outline" className="flex-shrink-0 gap-1 text-xs">
                                 {getVisitPreferenceIcon(place.visitPreference)}
                                 {place.visitPreference}
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">{place.address}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">{place.address}</p>
                           {place.rating && (
                             <div className="mt-1 flex items-center gap-1">
                               <Star className="size-4 fill-yellow-400 text-yellow-400" />
@@ -417,13 +417,13 @@ export function TripDashboard({
                             </div>
                           )}
                           {place.notes && (
-                            <p className="mt-1 text-sm italic text-muted-foreground">
+                            <p className="mt-2 text-sm italic text-muted-foreground">
                               <FileText className="mr-1 inline size-3" />
                               {place.notes}
                             </p>
                           )}
                           {place.tags && place.tags.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
+                            <div className="mt-2 flex flex-wrap gap-1">
                               {place.tags.map((tag) => (
                                 <Badge key={tag} variant="secondary" className="text-xs">
                                   <Tag className="mr-1 size-3" />
