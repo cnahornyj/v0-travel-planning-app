@@ -467,7 +467,13 @@ export function TravelPlanner() {
               />
             )}
             {activeTab === "saved" && (
-              <SavedPlaces places={savedPlaces} onPlaceSelect={handlePlaceSelect} onRemovePlace={handleRemovePlace} />
+              <SavedPlaces
+                places={savedPlaces}
+                onPlaceSelect={handlePlaceSelect}
+                onRemovePlace={handleRemovePlace}
+                trips={trips}
+                onAddPlaceToTrip={handleAddPlaceToTrip}
+              />
             )}
             {activeTab === "trips" && (
               <TripDashboard
