@@ -386,111 +386,116 @@ export function TripDashboard({
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Places in this trip:</h4>
                   {trip.places.map((place) => (
-                    <Card key={place.id} className="flex gap-4 p-4">
-                      {place.photos && place.photos.length > 0 && (
-                        <div className="flex-shrink-0">
+                    <Card key={place.id} className="overflow-hidden p-0">
+                      <div className="flex">
+                        {/* Left side: Large prominent image */}
+                        <div className="flex-shrink-0 cursor-pointer" onClick={() => onPlaceSelect(place)}>
                           <img
-                            src={place.photos[0] || "/placeholder.svg"}
+                            src={place.photos?.[0] || "/placeholder.svg?height=200&width=200"}
                             alt={place.name}
-                            className="size-32 cursor-pointer rounded-lg object-cover"
-                            onClick={() => onPlaceSelect(place)}
+                            className="h-full w-48 object-cover"
                           />
                         </div>
-                      )}
 
-                      <div className="flex min-w-0 flex-1 flex-col gap-2">
-                        <div className="cursor-pointer" onClick={() => onPlaceSelect(place)}>
-                          <div className="flex items-start justify-between gap-2">
-                            <h5 className="font-semibold leading-tight">{place.name}</h5>
-                            {place.visitPreference && (
-                              <Badge variant="outline" className="flex-shrink-0 gap-1 text-xs">
-                                {getVisitPreferenceIcon(place.visitPreference)}
-                                {place.visitPreference}
-                              </Badge>
+                        {/* Right side: All place information */}
+                        <div className="flex min-w-0 flex-1 flex-col justify-between p-4">
+                          <div className="cursor-pointer space-y-2" onClick={() => onPlaceSelect(place)}>
+                            <div className="flex items-start justify-between gap-2">
+                              <h5 className="text-lg font-semibold leading-tight">{place.name}</h5>
+                              {place.visitPreference && (
+                                <Badge variant="outline" className="flex-shrink-0 gap-1 text-xs">
+                                  {getVisitPreferenceIcon(place.visitPreference)}
+                                  {place.visitPreference}
+                                </Badge>
+                              )}
+                            </div>
+
+                            <p className="text-sm text-muted-foreground">{place.address}</p>
+
+                            {place.rating && (
+                              <div className="flex items-center gap-1">
+                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                                <span className="text-sm font-medium">{place.rating}</span>
+                              </div>
+                            )}
+
+                            {place.notes && (
+                              <p className="text-sm italic text-muted-foreground">
+                                <FileText className="mr-1 inline size-3" />
+                                {place.notes}
+                              </p>
+                            )}
+
+                            {place.tags && place.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {place.tags.map((tag) => (
+                                  <Badge key={tag} variant="secondary" className="text-xs">
+                                    <Tag className="mr-1 size-3" />
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
                             )}
                           </div>
-                          <p className="mt-1 text-sm text-muted-foreground">{place.address}</p>
-                          {place.rating && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm font-medium">{place.rating}</span>
-                            </div>
-                          )}
-                          {place.notes && (
-                            <p className="mt-2 text-sm italic text-muted-foreground">
-                              <FileText className="mr-1 inline size-3" />
-                              {place.notes}
-                            </p>
-                          )}
-                          {place.tags && place.tags.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {place.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  <Tag className="mr-1 size-3" />
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
 
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setEditingNotes({
-                                tripId: trip.id,
-                                placeId: place.id,
-                                notes: place.notes || "",
-                              })
-                            }
-                          >
-                            <FileText className="mr-1 size-3" />
-                            Notes
-                          </Button>
-                          {onUpdatePlaceTags && (
+                          <div className="mt-3 flex flex-wrap gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() =>
-                                setEditingTags({
+                                setEditingNotes({
                                   tripId: trip.id,
                                   placeId: place.id,
-                                  tags: place.tags || [],
-                                  newTag: "",
+                                  notes: place.notes || "",
                                 })
                               }
                             >
-                              <Tag className="mr-1 size-3" />
-                              Tags
+                              <FileText className="mr-1 size-3" />
+                              Notes
                             </Button>
-                          )}
-                          {onUpdatePlaceVisitPreference && (
+                            {onUpdatePlaceTags && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setEditingTags({
+                                    tripId: trip.id,
+                                    placeId: place.id,
+                                    tags: place.tags || [],
+                                    newTag: "",
+                                  })
+                                }
+                              >
+                                <Tag className="mr-1 size-3" />
+                                Tags
+                              </Button>
+                            )}
+                            {onUpdatePlaceVisitPreference && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  setEditingVisitPreference({
+                                    tripId: trip.id,
+                                    placeId: place.id,
+                                    preference: place.visitPreference || "anytime",
+                                  })
+                                }
+                              >
+                                <Clock className="mr-1 size-3" />
+                                Time
+                              </Button>
+                            )}
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() =>
-                                setEditingVisitPreference({
-                                  tripId: trip.id,
-                                  placeId: place.id,
-                                  preference: place.visitPreference || "anytime",
-                                })
-                              }
+                              className="text-destructive"
+                              onClick={() => onRemovePlaceFromTrip(trip.id, place.id)}
                             >
-                              <Clock className="mr-1 size-3" />
-                              Time
+                              <Trash2 className="mr-1 size-3" />
+                              Remove
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive"
-                            onClick={() => onRemovePlaceFromTrip(trip.id, place.id)}
-                          >
-                            <Trash2 className="mr-1 size-3" />
-                            Remove
-                          </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
