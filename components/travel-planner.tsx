@@ -19,7 +19,6 @@ export interface Place {
   type?: string
   rating?: number
   photos?: string[]
-  userImages?: string[]
   saved?: boolean
   notes?: string
   tags?: string[]
@@ -298,7 +297,7 @@ export function TravelPlanner() {
     }
   }
 
-  const handleUpdatePlaceImages = async (tripId: string, placeId: string, userImages: string[]) => {
+  const handleUpdatePlaceImages = async (tripId: string, placeId: string, photos: string[]) => {
     if (!tripId || tripId === "undefined") {
       console.error("[v0] Cannot update place images with invalid trip ID:", tripId)
       return
@@ -306,14 +305,14 @@ export function TravelPlanner() {
 
     const trip = trips.find((t) => t.id === tripId)
     if (trip) {
-      const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, userImages } : p))
+      const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, photos } : p))
       await handleUpdateTrip(tripId, { places: updatedPlaces })
     }
   }
 
-  const handleUpdateSavedPlaceImages = async (placeId: string, userImages: string[]) => {
+  const handleUpdateSavedPlaceImages = async (placeId: string, photos: string[]) => {
     console.log("[v0] handleUpdateSavedPlaceImages called for place:", placeId)
-    console.log("[v0] New userImages:", userImages)
+    console.log("[v0] New photos:", photos)
 
     setIsSyncing(true)
     try {
@@ -323,30 +322,30 @@ export function TravelPlanner() {
         selectedPlace
 
       console.log("[v0] Place found:", place)
-      console.log("[v0] Making API call to update images...")
+      console.log("[v0] Making API call to update photos...")
 
       const response = await fetch(`/api/places?id=${placeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userImages, place }),
+        body: JSON.stringify({ photos, place }),
       })
 
       const responseData = await response.json()
       console.log("[v0] API response:", responseData)
 
       if (response.ok) {
-        console.log("[v0] Successfully updated images in database")
+        console.log("[v0] Successfully updated photos in database")
 
         if (selectedPlace && selectedPlace.id === placeId) {
-          setSelectedPlace((prev) => (prev ? { ...prev, userImages } : null))
+          setSelectedPlace((prev) => (prev ? { ...prev, photos } : null))
         }
 
         setSavedPlaces((prev) => {
           const existing = prev.find((p) => p.id === placeId)
           if (existing) {
-            return prev.map((p) => (p.id === placeId ? { ...p, userImages } : p))
+            return prev.map((p) => (p.id === placeId ? { ...p, photos } : p))
           } else if (place) {
-            return [...prev, { ...place, userImages, saved: true }]
+            return [...prev, { ...place, photos, saved: true }]
           }
           return prev
         })
@@ -354,16 +353,16 @@ export function TravelPlanner() {
         setTrips((prev) =>
           prev.map((trip) => ({
             ...trip,
-            places: trip.places.map((p) => (p.id === placeId ? { ...p, userImages } : p)),
+            places: trip.places.map((p) => (p.id === placeId ? { ...p, photos } : p)),
           })),
         )
 
-        console.log("[v0] Updated images for place:", placeId)
+        console.log("[v0] Updated photos for place:", placeId)
       } else {
-        console.error("[v0] Failed to update place images, response:", responseData)
+        console.error("[v0] Failed to update place photos, response:", responseData)
       }
     } catch (error) {
-      console.error("[v0] Error updating place images:", error)
+      console.error("[v0] Error updating place photos:", error)
     } finally {
       setIsSyncing(false)
     }

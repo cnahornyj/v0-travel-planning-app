@@ -103,7 +103,7 @@ export async function PATCH(request: Request) {
     const body = await request.json()
 
     console.log("[v0] PATCH request received for place ID:", placeId)
-    console.log("[v0] PATCH body userImages:", body.userImages)
+    console.log("[v0] PATCH body photos:", body.photos)
 
     if (!placeId || placeId === "undefined") {
       console.error("[v0] Invalid place ID provided:", placeId)
@@ -117,15 +117,11 @@ export async function PATCH(request: Request) {
     console.log("[v0] Existing place found:", !!existingPlace)
 
     if (!existingPlace) {
-      console.log("[v0] Place not found, creating new place with images")
+      console.log("[v0] Place not found, creating new place with photos")
 
       if (!body.place) {
         return NextResponse.json({ error: "Place data required for new place" }, { status: 400 })
       }
-
-      const googlePhotos = Array.isArray(body.place.photos) ? body.place.photos : []
-      const userPhotos = Array.isArray(body.userImages) ? body.userImages : []
-      const allPhotos = [...googlePhotos, ...userPhotos]
 
       const newPlace = {
         id: placeId,
@@ -135,8 +131,7 @@ export async function PATCH(request: Request) {
         lng: body.place.lng || 0,
         type: body.place.type || null,
         rating: body.place.rating || null,
-        photos: allPhotos,
-        userImages: Array.isArray(body.userImages) ? body.userImages : [],
+        photos: Array.isArray(body.photos) ? body.photos : [],
         saved: true,
         notes: body.place.notes || "",
         tags: Array.isArray(body.place.tags) ? body.place.tags : [],
@@ -150,28 +145,16 @@ export async function PATCH(request: Request) {
         createdAt: new Date().toISOString(),
       }
 
-      console.log("[v0] Creating new place with photos:", allPhotos)
+      console.log("[v0] Creating new place with photos:", newPlace.photos)
       await db.collection("places").insertOne(newPlace)
       console.log("[v0] New place created successfully")
       return NextResponse.json({ success: true })
     }
 
     const updateData: any = {}
-    if (body.userImages !== undefined) {
-      updateData.userImages = body.userImages
-
-      // Merge Google photos with user images
-      const existingGooglePhotos = Array.isArray(existingPlace.photos) ? existingPlace.photos : []
-      const existingUserImages = Array.isArray(existingPlace.userImages) ? existingPlace.userImages : []
-
-      // Filter out old user images from photos array (keep only Google photos)
-      const googlePhotosOnly = existingGooglePhotos.filter((photo: string) => !existingUserImages.includes(photo))
-
-      // Merge with new user images
-      updateData.photos = [...googlePhotosOnly, ...body.userImages]
-
+    if (body.photos !== undefined) {
+      updateData.photos = body.photos
       console.log("[v0] Updating photos array to:", updateData.photos)
-      console.log("[v0] Updating userImages to:", body.userImages)
     }
 
     const result = await db.collection("places").updateOne({ id: placeId }, { $set: updateData })
@@ -180,7 +163,6 @@ export async function PATCH(request: Request) {
 
     const updatedPlace = await db.collection("places").findOne({ id: placeId })
     console.log("[v0] After update - photos:", updatedPlace?.photos)
-    console.log("[v0] After update - userImages:", updatedPlace?.userImages)
 
     return NextResponse.json({ success: true })
   } catch (error) {
