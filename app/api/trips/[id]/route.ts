@@ -2,9 +2,9 @@ import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const tripId = params.id
+    const { id: tripId } = await params
     const body = await request.json()
 
     console.log("[v0] PATCH request for trip ID:", tripId)
@@ -27,9 +27,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const tripId = params.id
+    const { id: tripId } = await params
 
     console.log("[v0] DELETE request for trip ID:", tripId)
 
