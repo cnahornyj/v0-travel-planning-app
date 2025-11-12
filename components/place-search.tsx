@@ -333,6 +333,9 @@ export function PlaceSearch({
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation()
+                            console.log("[v0] Plus button clicked for place:", place.name)
+                            console.log("[v0] Available trips:", trips.length)
+                            console.log("[v0] Setting tripSelectionPlace to:", place)
                             setTripSelectionPlace(place)
                           }}
                         >
@@ -455,8 +458,12 @@ export function PlaceSearch({
                 variant="outline"
                 className="w-full justify-start bg-transparent"
                 onClick={() => {
+                  console.log("[v0] Trip selected:", trip.name, trip.id)
+                  console.log("[v0] Adding place:", tripSelectionPlace?.name)
+                  console.log("[v0] onAddPlaceToTrip function exists:", !!onAddPlaceToTrip)
                   if (tripSelectionPlace && onAddPlaceToTrip) {
                     onAddPlaceToTrip(trip.id, tripSelectionPlace)
+                    console.log("[v0] Place added to trip, closing dialog")
                     setTripSelectionPlace(null)
                   }
                 }}

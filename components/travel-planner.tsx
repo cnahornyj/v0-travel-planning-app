@@ -228,15 +228,23 @@ export function TravelPlanner() {
   }
 
   const handleAddPlaceToTrip = async (tripId: string, place: Place) => {
+    console.log("[v0] handleAddPlaceToTrip called with tripId:", tripId, "place:", place.name)
     if (!tripId || tripId === "undefined") {
       console.error("[v0] Cannot add place to trip with invalid ID:", tripId)
       return
     }
 
     const trip = trips.find((t) => t.id === tripId)
+    console.log("[v0] Found trip:", trip?.name)
     if (trip && !trip.places.some((p) => p.id === place.id)) {
+      console.log("[v0] Place not in trip yet, adding...")
       const updatedPlaces = [...trip.places, place]
       await handleUpdateTrip(tripId, { places: updatedPlaces })
+      console.log("[v0] Place added successfully")
+    } else if (trip) {
+      console.log("[v0] Place already in trip")
+    } else {
+      console.log("[v0] Trip not found")
     }
   }
 
