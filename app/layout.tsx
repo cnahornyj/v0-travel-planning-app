@@ -1,13 +1,34 @@
 import type React from "react"
 import type { Metadata } from "next"
+import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { Suspense } from "react"
+import Script from "next/script"
 import "./globals.css"
 
+const _geist = Geist({ subsets: ["latin"] })
+const _geistMono = Geist_Mono({ subsets: ["latin"] })
+
 export const metadata: Metadata = {
-  title: "Travel Planner",
-  description: "Plan your perfect trip with AI-powered recommendations",
+  title: "TripPlanner - Plan Your Perfect Journey",
+  description: "Create and manage your travel itineraries with ease",
   generator: "v0.app",
+  icons: {
+    icon: [
+      {
+        url: "/icon-light-32x32.png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icon-dark-32x32.png",
+        media: "(prefers-color-scheme: dark)",
+      },
+      {
+        url: "/icon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    apple: "/apple-icon.png",
+  },
 }
 
 export default function RootLayout({
@@ -17,11 +38,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <head>
+        <Script
+          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+          strategy="beforeInteractive"
+        />
+      </head>
+      <body className={`font-sans antialiased`}>
         {children}
-        <Suspense>
-          <Analytics />
-        </Suspense>
+        <Analytics />
       </body>
     </html>
   )
