@@ -370,29 +370,6 @@ export function PlaceDetails({
               )}
             </div>
 
-            {(detailedPlace.phone || detailedPlace.website) && (
-              <div className="space-y-2">
-                {detailedPlace.phone && (
-                  <a href={`tel:${detailedPlace.phone}`} className="flex items-center gap-2 text-sm hover:underline">
-                    <Phone className="size-4" />
-                    {detailedPlace.phone}
-                  </a>
-                )}
-
-                {detailedPlace.website && (
-                  <a
-                    href={detailedPlace.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <Globe className="size-4" />
-                    Visit Website
-                  </a>
-                )}
-              </div>
-            )}
-
             {detailedPlace.reviews && detailedPlace.reviews.length > 0 && (
               <div className="space-y-3">
                 <h3 className="font-semibold">Reviews</h3>
