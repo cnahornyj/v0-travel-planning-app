@@ -287,6 +287,47 @@ export function TravelPlanner() {
     }
   }
 
+  const handleUpdatePlaceWebsite = async (placeId: string, website: string) => {
+    console.log("[v0] handleUpdatePlaceWebsite called for place:", placeId)
+    console.log("[v0] New website:", website)
+
+    setIsSyncing(true)
+    try {
+      if (selectedPlace && selectedPlace.id === placeId) {
+        setSelectedPlace((prev) => (prev ? { ...prev, website } : null))
+      }
+
+      const tripsWithPlace = trips.filter((trip) => trip.places.some((p) => p.id === placeId))
+
+      for (const trip of tripsWithPlace) {
+        const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, website } : p))
+
+        const response = await fetch(`/api/trips/${trip.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ places: updatedPlaces }),
+        })
+
+        if (response.ok) {
+          console.log("[v0] Updated website in trip:", trip.name)
+        }
+      }
+
+      setTrips((prev) =>
+        prev.map((trip) => ({
+          ...trip,
+          places: trip.places.map((p) => (p.id === placeId ? { ...p, website } : p)),
+        })),
+      )
+
+      console.log("[v0] Updated website for place:", placeId)
+    } catch (error) {
+      console.error("[v0] Error updating place website:", error)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   const handleExportData = () => {
     const data = {
       trips: trips,
@@ -423,6 +464,7 @@ export function TravelPlanner() {
           trips={trips}
           onAddPlaceToTrip={handleAddPlaceToTrip}
           onUpdateImages={handleUpdatePlacePhotos}
+          onUpdateWebsite={handleUpdatePlaceWebsite}
         />
       )}
 

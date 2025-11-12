@@ -19,6 +19,8 @@ import {
   MoveUp,
   MoveDown,
   Trash2,
+  Edit2,
+  Check,
 } from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
 
@@ -28,14 +30,24 @@ interface PlaceDetailsProps {
   trips?: Trip[]
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
   onUpdateImages?: (placeId: string, photos: string[]) => void
+  onUpdateWebsite?: (placeId: string, website: string) => void
 }
 
-export function PlaceDetails({ place, onClose, trips = [], onAddPlaceToTrip, onUpdateImages }: PlaceDetailsProps) {
+export function PlaceDetails({
+  place,
+  onClose,
+  trips = [],
+  onAddPlaceToTrip,
+  onUpdateImages,
+  onUpdateWebsite,
+}: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [showTripSelection, setShowTripSelection] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showImageUpload, setShowImageUpload] = useState(false)
   const [imageUrl, setImageUrl] = useState("")
+  const [isEditingWebsite, setIsEditingWebsite] = useState(false)
+  const [websiteUrl, setWebsiteUrl] = useState(detailedPlace.website || "")
 
   const allImages = detailedPlace.photos || []
 
@@ -76,6 +88,23 @@ export function PlaceDetails({ place, onClose, trips = [], onAddPlaceToTrip, onU
 
     setImageUrl("")
     setShowImageUpload(false)
+  }
+
+  const handleUpdateWebsite = async () => {
+    if (!onUpdateWebsite) return
+
+    const trimmedUrl = websiteUrl.trim()
+    console.log("[v0] Updating website URL:", trimmedUrl)
+
+    setDetailedPlace((prev) => ({ ...prev, website: trimmedUrl }))
+
+    try {
+      await onUpdateWebsite(detailedPlace.id, trimmedUrl)
+      console.log("[v0] Website URL saved successfully")
+      setIsEditingWebsite(false)
+    } catch (error) {
+      console.error("[v0] Error saving website URL:", error)
+    }
   }
 
   const handleRemoveImage = async (imageIndex: number) => {
@@ -269,6 +298,77 @@ export function PlaceDetails({ place, onClose, trips = [], onAddPlaceToTrip, onU
             </div>
 
             {formatOpeningHours()}
+
+            <div className="space-y-2">
+              {detailedPlace.phone && (
+                <a href={`tel:${detailedPlace.phone}`} className="flex items-center gap-2 text-sm hover:underline">
+                  <Phone className="size-4" />
+                  {detailedPlace.phone}
+                </a>
+              )}
+
+              {!isEditingWebsite ? (
+                <div className="flex items-center justify-between gap-2">
+                  {detailedPlace.website ? (
+                    <a
+                      href={detailedPlace.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <Globe className="size-4" />
+                      Visit Website
+                    </a>
+                  ) : (
+                    <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Globe className="size-4" />
+                      No website
+                    </span>
+                  )}
+                  {onUpdateWebsite && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      onClick={() => {
+                        setWebsiteUrl(detailedPlace.website || "")
+                        setIsEditingWebsite(true)
+                      }}
+                    >
+                      <Edit2 className="size-3" />
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="Enter website URL (https://...)"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleUpdateWebsite()
+                      } else if (e.key === "Escape") {
+                        setIsEditingWebsite(false)
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleUpdateWebsite} size="icon" className="flex-shrink-0">
+                    <Check className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsEditingWebsite(false)}
+                    className="flex-shrink-0"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
 
             {(detailedPlace.phone || detailedPlace.website) && (
               <div className="space-y-2">
