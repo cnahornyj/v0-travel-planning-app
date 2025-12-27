@@ -30,6 +30,8 @@ interface PlaceDetailsProps {
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
   onUpdateImages?: (placeId: string, photos: string[]) => void
   onUpdateWebsite?: (placeId: string, website: string) => void
+  onUpdateTags?: (placeId: string, tags: string[]) => void
+  onUpdateOpeningHours?: (placeId: string, weekdayText: string[]) => void
 }
 
 export function PlaceDetails({
@@ -39,6 +41,8 @@ export function PlaceDetails({
   onAddPlaceToTrip,
   onUpdateImages,
   onUpdateWebsite,
+  onUpdateTags,
+  onUpdateOpeningHours,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -49,8 +53,8 @@ export function PlaceDetails({
   const [isEditingHours, setIsEditingHours] = useState(false)
   const [openingHours, setOpeningHours] = useState<string[]>(detailedPlace.openingHours?.weekdayText || [])
   const [isAddingHours, setIsAddingHours] = useState(false)
-
-  const allImages = detailedPlace.photos || []
+  const [isEditingTags, setIsEditingTags] = useState(false)
+  const [newTag, setNewTag] = useState("")
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -101,7 +105,9 @@ export function PlaceDetails({
     }
   }
 
-  const handleUpdateOpeningHours = () => {
+  const handleUpdateOpeningHours = async () => {
+    if (!onUpdateOpeningHours) return
+
     setDetailedPlace((prev) => ({
       ...prev,
       openingHours: {
@@ -109,8 +115,14 @@ export function PlaceDetails({
         weekdayText: openingHours,
       },
     }))
-    setIsEditingHours(false)
-    setIsAddingHours(false)
+
+    try {
+      await onUpdateOpeningHours(detailedPlace.id, openingHours)
+      setIsEditingHours(false)
+      setIsAddingHours(false)
+    } catch (error) {
+      console.error("[v0] Error saving opening hours:", error)
+    }
   }
 
   const handleRemoveImage = async (imageIndex: number) => {
@@ -121,8 +133,8 @@ export function PlaceDetails({
     setDetailedPlace((prev) => ({ ...prev, photos: updatedPhotos }))
     await onUpdateImages(detailedPlace.id, updatedPhotos)
 
-    if (currentImageIndex >= allImages.length - 1) {
-      setCurrentImageIndex(Math.max(0, allImages.length - 2))
+    if (currentImageIndex >= detailedPlace.photos.length - 1) {
+      setCurrentImageIndex(Math.max(0, detailedPlace.photos.length - 2))
     }
   }
 
@@ -153,11 +165,13 @@ export function PlaceDetails({
   }
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % allImages.length)
+    setCurrentImageIndex((prev) => (prev + 1) % (detailedPlace.photos || []).length)
   }
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length)
+    setCurrentImageIndex(
+      (prev) => (prev - 1 + (detailedPlace.photos || []).length) % (detailedPlace.photos || []).length,
+    )
   }
 
   const getPriceLevelText = (level?: number) => {
@@ -279,6 +293,39 @@ export function PlaceDetails({
     )
   }
 
+  const handleAddTag = async () => {
+    if (!newTag.trim() || !onUpdateTags) return
+
+    const currentTags = detailedPlace.tags || []
+    if (currentTags.includes(newTag.trim())) {
+      setNewTag("")
+      return
+    }
+
+    const updatedTags = [...currentTags, newTag.trim()]
+    setDetailedPlace((prev) => ({ ...prev, tags: updatedTags }))
+
+    try {
+      await onUpdateTags(detailedPlace.id, updatedTags)
+      setNewTag("")
+    } catch (error) {
+      console.error("[v0] Error adding tag:", error)
+    }
+  }
+
+  const handleRemoveTag = async (tagToRemove: string) => {
+    if (!onUpdateTags) return
+
+    const updatedTags = (detailedPlace.tags || []).filter((tag) => tag !== tagToRemove)
+    setDetailedPlace((prev) => ({ ...prev, tags: updatedTags }))
+
+    try {
+      await onUpdateTags(detailedPlace.id, updatedTags)
+    } catch (error) {
+      console.error("[v0] Error removing tag:", error)
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
@@ -297,14 +344,14 @@ export function PlaceDetails({
 
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-6 p-6">
-            {allImages.length > 0 && (
+            {(detailedPlace.photos || []).length > 0 && (
               <div className="relative">
                 <img
-                  src={allImages[currentImageIndex] || "/placeholder.svg"}
+                  src={detailedPlace.photos[currentImageIndex] || "/placeholder.svg"}
                   alt={detailedPlace.name}
                   className="w-full rounded-lg"
                 />
-                {allImages.length > 1 && (
+                {(detailedPlace.photos || []).length > 1 && (
                   <>
                     <Button
                       variant="secondary"
@@ -323,7 +370,7 @@ export function PlaceDetails({
                       <ChevronRight className="size-4" />
                     </Button>
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-background/80 px-3 py-1 text-sm">
-                      {currentImageIndex + 1} / {allImages.length}
+                      {currentImageIndex + 1} / {(detailedPlace.photos || []).length}
                     </div>
                     {onUpdateImages && (
                       <div className="absolute bottom-2 right-2 flex gap-1">
@@ -338,7 +385,7 @@ export function PlaceDetails({
                             <MoveUp className="size-3" />
                           </Button>
                         )}
-                        {currentImageIndex < allImages.length - 1 && (
+                        {currentImageIndex < (detailedPlace.photos || []).length - 1 && (
                           <Button
                             variant="secondary"
                             size="icon"
@@ -452,6 +499,61 @@ export function PlaceDetails({
                     className="flex-shrink-0"
                   >
                     <X className="size-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Tags:</span>
+                {onUpdateTags && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => setIsEditingTags(!isEditingTags)}
+                  >
+                    <Edit2 className="size-3" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {detailedPlace.tags && detailedPlace.tags.length > 0 ? (
+                  detailedPlace.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary" className="gap-1">
+                      {tag}
+                      {isEditingTags && onUpdateTags && (
+                        <button onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
+                          <X className="size-3" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">Aucun tag</span>
+                )}
+              </div>
+
+              {isEditingTags && onUpdateTags && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ajouter un tag..."
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleAddTag()
+                      } else if (e.key === "Escape") {
+                        setIsEditingTags(false)
+                        setNewTag("")
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleAddTag} size="sm">
+                    <Plus className="size-4" />
                   </Button>
                 </div>
               )}

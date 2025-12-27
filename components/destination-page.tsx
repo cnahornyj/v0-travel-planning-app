@@ -312,19 +312,21 @@ export function DestinationPage() {
                           alt={place.name}
                           className="size-full object-cover"
                         />
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          onClick={() => handlePlaceSelect(place)}
-                          className="absolute right-2 top-2 size-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
-                        >
-                          <Info className="size-4" />
-                        </Button>
                       </div>
 
                       <div className="flex flex-1 flex-col justify-between p-4">
                         <div className="space-y-2">
-                          <h3 className="text-lg font-bold leading-tight">{place.name}</h3>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="text-lg font-bold leading-tight">{place.name}</h3>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handlePlaceSelect(place)}
+                              className="size-8 shrink-0"
+                            >
+                              <Info className="size-4" />
+                            </Button>
+                          </div>
 
                           <div className="flex items-start gap-1 text-sm text-muted-foreground">
                             <MapPin className="mt-0.5 size-4 shrink-0" />
@@ -429,6 +431,7 @@ export function DestinationPage() {
           onUpdateImages={handleUpdatePlacePhotos}
           onUpdateWebsite={handleUpdatePlaceWebsite}
           onUpdateOpeningHours={handleUpdateOpeningHours}
+          onUpdateTags={handleUpdateTags}
         />
       )}
     </div>
