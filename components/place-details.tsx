@@ -47,17 +47,8 @@ export function PlaceDetails({
   const [isEditingWebsite, setIsEditingWebsite] = useState(false)
   const [websiteUrl, setWebsiteUrl] = useState(detailedPlace.website || "")
   const [isEditingHours, setIsEditingHours] = useState(false)
-  const [openingHours, setOpeningHours] = useState<string[]>(
-    detailedPlace.openingHours?.weekdayText || [
-      "Monday: 9:00 AM – 5:00 PM",
-      "Tuesday: 9:00 AM – 5:00 PM",
-      "Wednesday: 9:00 AM – 5:00 PM",
-      "Thursday: 9:00 AM – 5:00 PM",
-      "Friday: 9:00 AM – 5:00 PM",
-      "Saturday: Closed",
-      "Sunday: Closed",
-    ],
-  )
+  const [openingHours, setOpeningHours] = useState<string[]>(detailedPlace.openingHours?.weekdayText || [])
+  const [isAddingHours, setIsAddingHours] = useState(false)
 
   const allImages = detailedPlace.photos || []
 
@@ -119,6 +110,7 @@ export function PlaceDetails({
       },
     }))
     setIsEditingHours(false)
+    setIsAddingHours(false)
   }
 
   const handleRemoveImage = async (imageIndex: number) => {
@@ -175,12 +167,43 @@ export function PlaceDetails({
   }
 
   const formatOpeningHours = () => {
-    const hours = detailedPlace.openingHours?.weekdayText || openingHours
+    const hours = detailedPlace.openingHours?.weekdayText
 
-    if (!hours || hours.length === 0) return null
+    if (!hours || hours.length === 0) {
+      if (!isAddingHours) {
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="size-4" />
+                <span className="text-sm text-muted-foreground">Horaires non disponibles</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsAddingHours(true)
+                  setOpeningHours([
+                    "Lundi: ",
+                    "Mardi: ",
+                    "Mercredi: ",
+                    "Jeudi: ",
+                    "Vendredi: ",
+                    "Samedi: ",
+                    "Dimanche: ",
+                  ])
+                }}
+              >
+                Ajouter les horaires
+              </Button>
+            </div>
+          </div>
+        )
+      }
+    }
 
     const today = new Date().getDay()
-    const todayHours = hours[today === 0 ? 6 : today - 1]
+    const todayHours = hours && hours.length > 0 ? hours[today === 0 ? 6 : today - 1] : null
 
     return (
       <div className="space-y-2">
@@ -195,14 +218,14 @@ export function PlaceDetails({
             className="size-8"
             onClick={() => {
               setIsEditingHours(!isEditingHours)
-              setOpeningHours(hours)
+              setOpeningHours(hours || [])
             }}
           >
             <Edit2 className="size-3" />
           </Button>
         </div>
 
-        {!isEditingHours ? (
+        {!isEditingHours && !isAddingHours ? (
           <>
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium">Aujourd'hui:</span>
@@ -212,7 +235,7 @@ export function PlaceDetails({
             <details className="text-sm">
               <summary className="cursor-pointer text-primary">Tous les horaires</summary>
               <div className="mt-2 space-y-1 pl-4">
-                {hours.map((dayHours, index) => (
+                {hours?.map((dayHours, index) => (
                   <div key={index}>{dayHours}</div>
                 ))}
               </div>
@@ -229,6 +252,7 @@ export function PlaceDetails({
                   newHours[index] = e.target.value
                   setOpeningHours(newHours)
                 }}
+                placeholder={`Exemple: Lundi: 9:00 AM – 5:00 PM`}
                 className="text-sm"
               />
             ))}
@@ -242,7 +266,8 @@ export function PlaceDetails({
                 size="sm"
                 onClick={() => {
                   setIsEditingHours(false)
-                  setOpeningHours(detailedPlace.openingHours?.weekdayText || openingHours)
+                  setIsAddingHours(false)
+                  setOpeningHours(detailedPlace.openingHours?.weekdayText || [])
                 }}
               >
                 Annuler

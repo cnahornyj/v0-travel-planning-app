@@ -125,6 +125,19 @@ export function DestinationPage() {
     }
   }
 
+  const handleUpdateOpeningHours = async (placeId: string, weekdayText: string[]) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) =>
+      p.id === placeId ? { ...p, openingHours: { ...p.openingHours, weekdayText } } : p,
+    )
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, openingHours: { ...prev.openingHours, weekdayText } } : null))
+    }
+  }
+
   const updateTrip = async (updates: Partial<Trip>) => {
     try {
       const response = await fetch(`/api/trips/${tripId}`, {
@@ -415,6 +428,7 @@ export function DestinationPage() {
           onAddPlaceToTrip={handleAddPlace}
           onUpdateImages={handleUpdatePlacePhotos}
           onUpdateWebsite={handleUpdatePlaceWebsite}
+          onUpdateOpeningHours={handleUpdateOpeningHours}
         />
       )}
     </div>
