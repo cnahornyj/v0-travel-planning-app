@@ -289,28 +289,39 @@ export function DestinationPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-4">
                   {filteredPlaces.map((place) => (
-                    <Card key={place.id} className="flex overflow-hidden">
-                      <div className="w-32 shrink-0 overflow-hidden">
+                    <Card
+                      key={place.id}
+                      className="group relative flex overflow-hidden transition-shadow hover:shadow-lg"
+                    >
+                      <div className="relative w-64 shrink-0 overflow-hidden">
                         <img
-                          src={place.photos?.[0] || "/placeholder.svg?height=128&width=128"}
+                          src={place.photos?.[0] || "/placeholder.svg?height=300&width=400"}
                           alt={place.name}
                           className="size-full object-cover"
                         />
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          onClick={() => handlePlaceSelect(place)}
+                          className="absolute right-2 top-2 size-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <Info className="size-4" />
+                        </Button>
                       </div>
 
-                      <div className="flex flex-1 flex-col justify-between p-3">
+                      <div className="flex flex-1 flex-col justify-between p-4">
                         <div className="space-y-2">
-                          <h3 className="line-clamp-1 font-semibold">{place.name}</h3>
+                          <h3 className="text-lg font-bold leading-tight">{place.name}</h3>
 
-                          <div className="flex items-start gap-1 text-xs text-muted-foreground">
-                            <MapPin className="mt-0.5 size-3 shrink-0" />
+                          <div className="flex items-start gap-1 text-sm text-muted-foreground">
+                            <MapPin className="mt-0.5 size-4 shrink-0" />
                             <span className="line-clamp-2">{place.address}</span>
                           </div>
 
                           {place.rating && (
                             <div className="flex items-center gap-1">
-                              <Star className="size-3 fill-yellow-400 text-yellow-400" />
-                              <span className="text-xs font-medium">{place.rating}</span>
+                              <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                              <span className="text-sm font-medium">{place.rating}</span>
                             </div>
                           )}
 
@@ -319,18 +330,18 @@ export function DestinationPage() {
                               defaultValue={place.notes || ""}
                               onBlur={(e) => handleUpdateNotes(place.id, e.target.value)}
                               autoFocus
-                              className="min-h-16 text-xs"
+                              className="min-h-20 text-sm"
                             />
                           ) : (
-                            <div className="flex items-start gap-1">
-                              <p className="line-clamp-2 flex-1 text-xs text-muted-foreground">
-                                {place.notes || "No notes"}
+                            <div className="flex items-start gap-2">
+                              <p className="line-clamp-3 flex-1 text-sm text-muted-foreground">
+                                {place.notes || "Aucune note"}
                               </p>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setEditingNotes(place.id)}
-                                className="size-5 shrink-0"
+                                className="size-6 shrink-0"
                               >
                                 <Edit className="size-3" />
                               </Button>
@@ -348,20 +359,12 @@ export function DestinationPage() {
                           )}
                         </div>
 
-                        <div className="mt-2 flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handlePlaceSelect(place)}
-                            className="size-7"
-                          >
-                            <Info className="size-4" />
-                          </Button>
+                        <div className="mt-3 flex items-center justify-end">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => confirmDelete(place)}
-                            className="size-7 text-destructive hover:text-destructive"
+                            className="size-8 text-destructive hover:text-destructive"
                           >
                             <Trash2 className="size-4" />
                           </Button>

@@ -5,14 +5,12 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Star,
   Phone,
   Globe,
   Plus,
-  Calendar,
   ChevronLeft,
   ChevronRight,
   X,
@@ -21,6 +19,7 @@ import {
   Trash2,
   Edit2,
   Check,
+  Clock,
 } from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
 
@@ -42,12 +41,23 @@ export function PlaceDetails({
   onUpdateWebsite,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
-  const [showTripSelection, setShowTripSelection] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showImageUpload, setShowImageUpload] = useState(false)
   const [imageUrl, setImageUrl] = useState("")
   const [isEditingWebsite, setIsEditingWebsite] = useState(false)
   const [websiteUrl, setWebsiteUrl] = useState(detailedPlace.website || "")
+  const [isEditingHours, setIsEditingHours] = useState(false)
+  const [openingHours, setOpeningHours] = useState<string[]>(
+    detailedPlace.openingHours?.weekdayText || [
+      "Monday: 9:00 AM – 5:00 PM",
+      "Tuesday: 9:00 AM – 5:00 PM",
+      "Wednesday: 9:00 AM – 5:00 PM",
+      "Thursday: 9:00 AM – 5:00 PM",
+      "Friday: 9:00 AM – 5:00 PM",
+      "Saturday: Closed",
+      "Sunday: Closed",
+    ],
+  )
 
   const allImages = detailedPlace.photos || []
 
@@ -73,15 +83,10 @@ export function PlaceDetails({
 
     const updatedPhotos = [...(detailedPlace.photos || []), imageUrl.trim()]
 
-    console.log("[v0] Adding image URL:", imageUrl.trim())
-    console.log("[v0] Place ID:", detailedPlace.id)
-    console.log("[v0] Updated photos array:", updatedPhotos)
-
     setDetailedPlace((prev) => ({ ...prev, photos: updatedPhotos }))
 
     try {
       await onUpdateImages(detailedPlace.id, updatedPhotos)
-      console.log("[v0] Image saved successfully")
     } catch (error) {
       console.error("[v0] Error saving image:", error)
     }
@@ -94,26 +99,32 @@ export function PlaceDetails({
     if (!onUpdateWebsite) return
 
     const trimmedUrl = websiteUrl.trim()
-    console.log("[v0] Updating website URL:", trimmedUrl)
 
     setDetailedPlace((prev) => ({ ...prev, website: trimmedUrl }))
 
     try {
       await onUpdateWebsite(detailedPlace.id, trimmedUrl)
-      console.log("[v0] Website URL saved successfully")
       setIsEditingWebsite(false)
     } catch (error) {
       console.error("[v0] Error saving website URL:", error)
     }
   }
 
+  const handleUpdateOpeningHours = () => {
+    setDetailedPlace((prev) => ({
+      ...prev,
+      openingHours: {
+        ...prev.openingHours,
+        weekdayText: openingHours,
+      },
+    }))
+    setIsEditingHours(false)
+  }
+
   const handleRemoveImage = async (imageIndex: number) => {
     if (!onUpdateImages || !detailedPlace.photos) return
 
     const updatedPhotos = detailedPlace.photos.filter((_, index) => index !== imageIndex)
-
-    console.log("[v0] Removing image at index:", imageIndex)
-    console.log("[v0] Updated photos array:", updatedPhotos)
 
     setDetailedPlace((prev) => ({ ...prev, photos: updatedPhotos }))
     await onUpdateImages(detailedPlace.id, updatedPhotos)
@@ -131,8 +142,6 @@ export function PlaceDetails({
     photos[index] = photos[index - 1]
     photos[index - 1] = temp
 
-    console.log("[v0] Moving image up, new order:", photos)
-
     setDetailedPlace((prev) => ({ ...prev, photos }))
     await onUpdateImages(detailedPlace.id, photos)
     setCurrentImageIndex(index - 1)
@@ -145,8 +154,6 @@ export function PlaceDetails({
     const temp = photos[index]
     photos[index] = photos[index + 1]
     photos[index + 1] = temp
-
-    console.log("[v0] Moving image down, new order:", photos)
 
     setDetailedPlace((prev) => ({ ...prev, photos }))
     await onUpdateImages(detailedPlace.id, photos)
@@ -168,26 +175,81 @@ export function PlaceDetails({
   }
 
   const formatOpeningHours = () => {
-    if (!detailedPlace.openingHours?.weekdayText) return null
+    const hours = detailedPlace.openingHours?.weekdayText || openingHours
+
+    if (!hours || hours.length === 0) return null
 
     const today = new Date().getDay()
-    const todayHours = detailedPlace.openingHours.weekdayText[today === 0 ? 6 : today - 1]
+    const todayHours = hours[today === 0 ? 6 : today - 1]
 
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Today:</span>
-          <span className="text-sm">{todayHours?.replace(/^[^:]+:\s*/, "") || "Hours not available"}</span>
+          <div className="flex items-center gap-2">
+            <Clock className="size-4" />
+            <span className="text-sm font-medium">Horaires:</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => {
+              setIsEditingHours(!isEditingHours)
+              setOpeningHours(hours)
+            }}
+          >
+            <Edit2 className="size-3" />
+          </Button>
         </div>
 
-        <details className="text-sm">
-          <summary className="cursor-pointer text-primary">All hours</summary>
-          <div className="mt-2 space-y-1 pl-4">
-            {detailedPlace.openingHours.weekdayText.map((hours, index) => (
-              <div key={index}>{hours}</div>
+        {!isEditingHours ? (
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">Aujourd'hui:</span>
+              <span>{todayHours?.replace(/^[^:]+:\s*/, "") || "Non disponible"}</span>
+            </div>
+
+            <details className="text-sm">
+              <summary className="cursor-pointer text-primary">Tous les horaires</summary>
+              <div className="mt-2 space-y-1 pl-4">
+                {hours.map((dayHours, index) => (
+                  <div key={index}>{dayHours}</div>
+                ))}
+              </div>
+            </details>
+          </>
+        ) : (
+          <div className="space-y-2">
+            {openingHours.map((dayHours, index) => (
+              <Input
+                key={index}
+                value={dayHours}
+                onChange={(e) => {
+                  const newHours = [...openingHours]
+                  newHours[index] = e.target.value
+                  setOpeningHours(newHours)
+                }}
+                className="text-sm"
+              />
             ))}
+            <div className="flex gap-2">
+              <Button onClick={handleUpdateOpeningHours} size="sm">
+                <Check className="mr-2 size-3" />
+                Enregistrer
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditingHours(false)
+                  setOpeningHours(detailedPlace.openingHours?.weekdayText || openingHours)
+                }}
+              >
+                Annuler
+              </Button>
+            </div>
           </div>
-        </details>
+        )}
       </div>
     )
   }
@@ -288,7 +350,7 @@ export function PlaceDetails({
 
               {detailedPlace.isOpen !== undefined && (
                 <Badge variant={detailedPlace.isOpen ? "default" : "secondary"}>
-                  {detailedPlace.isOpen ? "Open Now" : "Closed"}
+                  {detailedPlace.isOpen ? "Ouvert" : "Fermé"}
                 </Badge>
               )}
 
@@ -317,12 +379,12 @@ export function PlaceDetails({
                       className="flex items-center gap-2 text-sm text-primary hover:underline"
                     >
                       <Globe className="size-4" />
-                      Visit Website
+                      Visiter le site web
                     </a>
                   ) : (
                     <span className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Globe className="size-4" />
-                      No website
+                      Aucun site web
                     </span>
                   )}
                   {onUpdateWebsite && (
@@ -343,7 +405,7 @@ export function PlaceDetails({
                 <div className="flex gap-2">
                   <Input
                     type="url"
-                    placeholder="Enter website URL (https://...)"
+                    placeholder="Entrez l'URL du site web (https://...)"
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
                     onKeyDown={(e) => {
@@ -372,7 +434,7 @@ export function PlaceDetails({
 
             {detailedPlace.reviews && detailedPlace.reviews.length > 0 && (
               <div className="space-y-3">
-                <h3 className="font-semibold">Reviews</h3>
+                <h3 className="font-semibold">Avis</h3>
                 {detailedPlace.reviews.map((review, index) => (
                   <Card key={index} className="p-4">
                     <div className="mb-2 flex items-center justify-between">
@@ -393,14 +455,14 @@ export function PlaceDetails({
                 {!showImageUpload ? (
                   <Button variant="outline" onClick={() => setShowImageUpload(true)} className="w-full">
                     <Plus className="mr-2 size-4" />
-                    Add Image URL
+                    Ajouter une image (URL)
                   </Button>
                 ) : (
                   <div className="space-y-2">
                     <div className="flex gap-2">
                       <Input
                         type="text"
-                        placeholder="Enter image URL"
+                        placeholder="Entrez l'URL de l'image"
                         value={imageUrl}
                         onChange={(e) => setImageUrl(e.target.value)}
                         onKeyDown={(e) => {
@@ -411,54 +473,19 @@ export function PlaceDetails({
                         className="flex-1"
                       />
                       <Button onClick={handleAddImageFromUrl} size="sm">
-                        Add
+                        Ajouter
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setShowImageUpload(false)}>
-                        Cancel
+                        Annuler
                       </Button>
                     </div>
                   </div>
                 )}
               </div>
             )}
-
-            {trips.length > 0 && (
-              <Button variant="default" onClick={() => setShowTripSelection(true)} className="w-full">
-                <Plus className="mr-2 size-4" />
-                Add to Trip
-              </Button>
-            )}
           </div>
         </div>
       </Card>
-
-      <Dialog open={showTripSelection} onOpenChange={setShowTripSelection}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add to Trip</DialogTitle>
-            <DialogDescription>Select a trip to add this place to</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            {trips.map((trip) => (
-              <Button
-                key={trip.id}
-                variant="outline"
-                className="w-full justify-start bg-transparent"
-                onClick={() => {
-                  if (onAddPlaceToTrip) {
-                    onAddPlaceToTrip(trip.id, detailedPlace)
-                    setShowTripSelection(false)
-                  }
-                }}
-              >
-                <Calendar className="mr-2 size-4" />
-                {trip.name}
-              </Button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
