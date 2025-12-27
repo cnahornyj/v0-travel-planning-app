@@ -68,6 +68,9 @@ export function DestinationPage() {
   const handleAddPlace = async (place: Place) => {
     if (!trip) return
 
+    console.log("[v0] handleAddPlace called with place:", place)
+    console.log("[v0] Place data - name:", place.name, "address:", place.address, "photos:", place.photos?.length)
+
     const updatedPlaces = [...trip.places, place]
     await updateTrip({ places: updatedPlaces })
     setShowPlaceSearch(false)
@@ -238,7 +241,7 @@ export function DestinationPage() {
               onShowDetails={() => setShowPlaceDetails(true)}
               onLocationChange={(location) => setMapCenter({ lat: location.lat, lng: location.lng })}
               trips={[trip]}
-              onAddPlaceToTrip={handleAddPlace}
+              onAddPlaceToTrip={(tripId, place) => handleAddPlace(place)}
             />
           </div>
         )}
