@@ -7,11 +7,18 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info } from "lucide-react"
 import type { Trip, Place } from "./travel-planner"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export function DestinationPage() {
   const params = useParams()
@@ -26,6 +33,7 @@ export function DestinationPage() {
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
+  const [placeToDelete, setPlaceToDelete] = useState<Place | null>(null)
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
     lat: 40.7128,
     lng: -74.006,
@@ -70,6 +78,7 @@ export function DestinationPage() {
 
     const updatedPlaces = trip.places.filter((p) => p.id !== placeId)
     await updateTrip({ places: updatedPlaces })
+    setPlaceToDelete(null)
   }
 
   const handleUpdateNotes = async (placeId: string, notes: string) => {
@@ -156,6 +165,10 @@ export function DestinationPage() {
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  }
+
+  const confirmDelete = (place: Place) => {
+    setPlaceToDelete(place)
   }
 
   if (isLoading) {
@@ -274,104 +287,85 @@ export function DestinationPage() {
                   </p>
                 </Card>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   {filteredPlaces.map((place) => (
                     <Card key={place.id} className="flex overflow-hidden">
-                      <div
-                        className="w-48 shrink-0 cursor-pointer overflow-hidden"
-                        onClick={() => handlePlaceSelect(place)}
-                      >
+                      <div className="w-32 shrink-0 overflow-hidden">
                         <img
-                          src={place.photos?.[0] || "/placeholder.svg?height=192&width=192"}
+                          src={place.photos?.[0] || "/placeholder.svg?height=128&width=128"}
                           alt={place.name}
-                          className="size-full object-cover transition-transform hover:scale-105"
+                          className="size-full object-cover"
                         />
                       </div>
 
-                      <div className="flex flex-1 flex-col p-4">
-                        <div className="mb-2 flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3
-                              className="cursor-pointer text-lg font-semibold hover:text-primary"
-                              onClick={() => handlePlaceSelect(place)}
-                            >
-                              {place.name}
-                            </h3>
-                            <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                              <MapPin className="size-4" />
-                              <span>{place.address}</span>
-                            </div>
-                            {place.rating && (
-                              <div className="mt-1 flex items-center gap-1">
-                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm font-medium">{place.rating}</span>
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemovePlace(place.id)}
-                            className="shrink-0"
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
+                      <div className="flex flex-1 flex-col justify-between p-3">
+                        <div className="space-y-2">
+                          <h3 className="line-clamp-1 font-semibold">{place.name}</h3>
 
-                        {editingNotes === place.id ? (
-                          <div className="mt-2 space-y-2">
+                          <div className="flex items-start gap-1 text-xs text-muted-foreground">
+                            <MapPin className="mt-0.5 size-3 shrink-0" />
+                            <span className="line-clamp-2">{place.address}</span>
+                          </div>
+
+                          {place.rating && (
+                            <div className="flex items-center gap-1">
+                              <Star className="size-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs font-medium">{place.rating}</span>
+                            </div>
+                          )}
+
+                          {editingNotes === place.id ? (
                             <Textarea
                               defaultValue={place.notes || ""}
                               onBlur={(e) => handleUpdateNotes(place.id, e.target.value)}
                               autoFocus
-                              className="min-h-20"
+                              className="min-h-16 text-xs"
                             />
-                          </div>
-                        ) : (
-                          <div className="mt-2">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm text-muted-foreground">{place.notes || "No notes"}</p>
+                          ) : (
+                            <div className="flex items-start gap-1">
+                              <p className="line-clamp-2 flex-1 text-xs text-muted-foreground">
+                                {place.notes || "No notes"}
+                              </p>
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setEditingNotes(place.id)}
-                                className="size-6"
+                                className="size-5 shrink-0"
                               >
                                 <Edit className="size-3" />
                               </Button>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          {place.tags?.map((tag) => (
-                            <Badge key={tag} variant="secondary">
-                              {tag}
-                            </Badge>
-                          ))}
+                          {place.tags && place.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {place.tags.map((tag) => (
+                                <Badge key={tag} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
-                        {place.visitPreference && (
-                          <div className="mt-2">
-                            <Select
-                              value={place.visitPreference}
-                              onValueChange={(value) =>
-                                handleUpdateVisitPreference(place.id, value as Place["visitPreference"])
-                              }
-                            >
-                              <SelectTrigger className="w-40">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="morning">Morning</SelectItem>
-                                <SelectItem value="afternoon">Afternoon</SelectItem>
-                                <SelectItem value="evening">Evening</SelectItem>
-                                <SelectItem value="night">Night</SelectItem>
-                                <SelectItem value="anytime">Anytime</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
+                        <div className="mt-2 flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handlePlaceSelect(place)}
+                            className="size-7"
+                          >
+                            <Info className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => confirmDelete(place)}
+                            className="size-7 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
@@ -390,6 +384,25 @@ export function DestinationPage() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!placeToDelete} onOpenChange={() => setPlaceToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmation de suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer le lieu <strong>{placeToDelete?.name}</strong> de votre destination ?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlaceToDelete(null)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={() => placeToDelete && handleRemovePlace(placeToDelete.id)}>
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {showPlaceDetails && selectedPlace && (
         <PlaceDetails
