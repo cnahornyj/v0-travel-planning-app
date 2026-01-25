@@ -307,86 +307,88 @@ export function DestinationPage() {
                   {filteredPlaces.map((place) => (
                     <Card
                       key={place.id}
-                      className="group relative flex overflow-hidden transition-shadow hover:shadow-lg"
+                      className="group flex h-44 items-stretch overflow-hidden p-3 transition-shadow hover:shadow-lg"
                     >
-                      <div className="relative h-48 w-64 shrink-0 overflow-hidden">
+                      <div className="relative h-full w-36 shrink-0 overflow-hidden rounded-xl">
                         <img
-                          src={place.photos?.[0] || "/placeholder.svg?height=300&width=400"}
+                          src={place.photos?.[0] || "/placeholder.svg?height=300&width=300"}
                           alt={place.name}
                           className="size-full object-cover"
                         />
                       </div>
 
-                      <div className="flex flex-1 flex-col justify-between p-4">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="flex-1 truncate text-lg font-bold leading-tight">{place.name}</h3>
+                      <div className="ml-4 flex flex-1 flex-col overflow-hidden">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="truncate text-base font-bold">{place.name}</h3>
+                          <div className="flex shrink-0 items-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handlePlaceSelect(place)}
-                              className="size-8 shrink-0"
+                              className="size-7"
                             >
                               <Info className="size-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => confirmDelete(place)}
+                              className="size-7 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
                           </div>
-
-                          <div className="flex items-start gap-1 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 size-4 shrink-0" />
-                            <span className="line-clamp-2">{place.address}</span>
-                          </div>
-
-                          {place.rating && (
-                            <div className="flex items-center gap-1">
-                              <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm font-medium">{place.rating}</span>
-                            </div>
-                          )}
-
-                          {editingNotes === place.id ? (
-                            <Textarea
-                              defaultValue={place.notes || ""}
-                              onBlur={(e) => handleUpdateNotes(place.id, e.target.value)}
-                              autoFocus
-                              className="min-h-20 text-sm"
-                            />
-                          ) : (
-                            <div className="flex items-start gap-2">
-                              <p className="line-clamp-3 flex-1 text-sm text-muted-foreground">
-                                {place.notes || "Aucune note"}
-                              </p>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditingNotes(place.id)}
-                                className="size-6 shrink-0"
-                              >
-                                <Edit className="size-3" />
-                              </Button>
-                            </div>
-                          )}
-
-                          {place.tags && place.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {place.tags.map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
                         </div>
 
-                        <div className="mt-3 flex items-center justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => confirmDelete(place)}
-                            className="size-8 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
+                        {place.rating && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">{place.rating}</span>
+                          </div>
+                        )}
+
+                        <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+                          <MapPin className="mt-0.5 size-3 shrink-0" />
+                          <span className="line-clamp-1">{place.address}</span>
                         </div>
+
+                        {editingNotes === place.id ? (
+                          <Textarea
+                            defaultValue={place.notes || ""}
+                            onBlur={(e) => handleUpdateNotes(place.id, e.target.value)}
+                            autoFocus
+                            className="mt-1 min-h-14 text-xs"
+                          />
+                        ) : (
+                          <div className="mt-1 flex items-start gap-1">
+                            <p className="line-clamp-2 flex-1 text-xs text-muted-foreground">
+                              {place.notes || "Aucune note"}
+                            </p>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingNotes(place.id)}
+                              className="size-5 shrink-0"
+                            >
+                              <Edit className="size-3" />
+                            </Button>
+                          </div>
+                        )}
+
+                        {place.tags && place.tags.length > 0 && (
+                          <div className="mt-auto flex flex-wrap gap-1 pt-1">
+                            {place.tags.slice(0, 3).map((tag) => (
+                              <Badge key={tag} variant="secondary" className="px-1.5 py-0 text-[10px]">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {place.tags.length > 3 && (
+                              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                                +{place.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </Card>
                   ))}
