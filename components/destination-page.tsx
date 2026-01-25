@@ -303,11 +303,11 @@ export function DestinationPage() {
                   </p>
                 </Card>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {filteredPlaces.map((place) => (
                     <Card
                       key={place.id}
-                      className="group flex h-44 items-stretch overflow-hidden p-3 transition-shadow hover:shadow-lg"
+                      className="group flex h-44 overflow-hidden p-3 transition-shadow hover:shadow-lg"
                     >
                       <div className="relative h-full w-36 shrink-0 overflow-hidden rounded-xl">
                         <img
@@ -317,7 +317,7 @@ export function DestinationPage() {
                         />
                       </div>
 
-                      <div className="ml-4 flex flex-1 flex-col overflow-hidden">
+                      <div className="ml-4 flex min-w-0 flex-1 flex-col">
                         <div className="flex items-start justify-between gap-2">
                           <h3 className="truncate text-base font-bold">{place.name}</h3>
                           <div className="flex shrink-0 items-center gap-1">
