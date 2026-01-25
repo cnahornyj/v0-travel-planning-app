@@ -307,7 +307,7 @@ export function DestinationPage() {
                   {filteredPlaces.map((place) => (
                     <Card
                       key={place.id}
-                      className="group flex h-44 overflow-hidden p-3 transition-shadow hover:shadow-lg"
+                      className="group flex h-44 flex-row gap-0 overflow-hidden p-3 py-3 transition-shadow hover:shadow-lg"
                     >
                       <div className="relative h-full w-36 shrink-0 overflow-hidden rounded-xl">
                         <img
