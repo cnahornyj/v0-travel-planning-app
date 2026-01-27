@@ -41,6 +41,15 @@ export interface Place {
   }>
 }
 
+export interface ScheduledEvent {
+  id: string
+  placeId: string
+  date: string // ISO date string (e.g., "2025-03-15")
+  startTime: string // 24h format (e.g., "10:00")
+  duration: number // in minutes
+  notes?: string
+}
+
 export interface Trip {
   id: string
   name: string
@@ -48,6 +57,7 @@ export interface Trip {
   startDate?: string
   endDate?: string
   places: Place[]
+  scheduledEvents?: ScheduledEvent[]
   createdAt: string
 }
 
