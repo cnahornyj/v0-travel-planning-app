@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   ChevronLeft,
@@ -10,9 +9,8 @@ import {
   X,
   Calendar,
   Clock,
-  MapPin,
-  Plus,
   Trash2,
+  AlertTriangle,
 } from "lucide-react"
 import type { Place, ScheduledEvent } from "./travel-planner"
 import { cn } from "@/lib/utils"
@@ -24,16 +22,17 @@ interface ScheduleSidebarProps {
   scheduledEvents: ScheduledEvent[]
   onAddEvent: (event: Omit<ScheduledEvent, "id">) => void
   onRemoveEvent: (eventId: string) => void
-  onOpenEventDialog: (date?: string, placeId?: string) => void
+  onOpenEventDialog: (date?: string, placeId?: string, startTime?: string) => void
 }
 
-type ViewMode = "week" | "month"
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const HOUR_HEIGHT = 60 // pixels per hour
 
-const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-]
+function formatHour(hour: number): string {
+  if (hour === 0) return "12 AM"
+  if (hour === 12) return "12 PM"
+  return hour > 12 ? `${hour - 12} PM` : `${hour} AM`
+}
 
 function formatTime(time: string): string {
   const [hours, minutes] = time.split(":")
@@ -47,7 +46,7 @@ function formatDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}min`
   const hours = Math.floor(minutes / 60)
   const mins = minutes % 60
-  return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`
+  return mins > 0 ? `${hours}h${mins}m` : `${hours}h`
 }
 
 function getWeekDates(date: Date): Date[] {
@@ -59,30 +58,6 @@ function getWeekDates(date: Date): Date[] {
     d.setDate(startOfWeek.getDate() + i)
     return d
   })
-}
-
-function getMonthDates(date: Date): Date[] {
-  const year = date.getFullYear()
-  const month = date.getMonth()
-  
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
-  
-  const startDate = new Date(firstDay)
-  startDate.setDate(firstDay.getDate() - firstDay.getDay())
-  
-  const endDate = new Date(lastDay)
-  endDate.setDate(lastDay.getDate() + (6 - lastDay.getDay()))
-  
-  const dates: Date[] = []
-  const current = new Date(startDate)
-  
-  while (current <= endDate) {
-    dates.push(new Date(current))
-    current.setDate(current.getDate() + 1)
-  }
-  
-  return dates
 }
 
 function isSameDay(d1: Date, d2: Date): boolean {
@@ -97,6 +72,86 @@ function formatDateKey(date: Date): string {
   return date.toISOString().split("T")[0]
 }
 
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number)
+  return hours * 60 + minutes
+}
+
+function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60) % 24
+  const m = minutes % 60
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`
+}
+
+// Check if a time is within opening hours for a place on a given day
+function isWithinOpeningHours(
+  place: Place,
+  date: Date,
+  startTime: string,
+  duration: number
+): { isOpen: boolean; warning?: string } {
+  if (!place.openingHours?.periods) {
+    return { isOpen: true } // No opening hours data, assume open
+  }
+
+  const dayOfWeek = date.getDay()
+  const startMinutes = timeToMinutes(startTime)
+  const endMinutes = startMinutes + duration
+
+  // Find periods for this day
+  const periodsForDay = place.openingHours.periods.filter(
+    (period) => period.open.day === dayOfWeek
+  )
+
+  if (periodsForDay.length === 0) {
+    return {
+      isOpen: false,
+      warning: `${place.name} appears to be closed on ${date.toLocaleDateString("en-US", { weekday: "long" })}`,
+    }
+  }
+
+  // Check if the event time falls within any open period
+  for (const period of periodsForDay) {
+    const openMinutes = timeToMinutes(period.open.time.slice(0, 2) + ":" + period.open.time.slice(2))
+    const closeMinutes = period.close
+      ? timeToMinutes(period.close.time.slice(0, 2) + ":" + period.close.time.slice(2))
+      : 24 * 60 // 24 hours if no close time (open 24h)
+
+    if (startMinutes >= openMinutes && endMinutes <= closeMinutes) {
+      return { isOpen: true }
+    }
+  }
+
+  // Get the opening hours text for this day if available
+  const dayText = place.openingHours.weekdayText?.[dayOfWeek]
+  return {
+    isOpen: false,
+    warning: dayText
+      ? `Outside opening hours: ${dayText}`
+      : `Event time may be outside opening hours`,
+  }
+}
+
+// Get opening hours for a place on a specific day
+function getOpeningHoursForDay(place: Place, date: Date): { open: number; close: number }[] {
+  if (!place.openingHours?.periods) return []
+
+  const dayOfWeek = date.getDay()
+  const periodsForDay = place.openingHours.periods.filter(
+    (period) => period.open.day === dayOfWeek
+  )
+
+  return periodsForDay.map((period) => {
+    const openMinutes = timeToMinutes(
+      period.open.time.slice(0, 2) + ":" + period.open.time.slice(2)
+    )
+    const closeMinutes = period.close
+      ? timeToMinutes(period.close.time.slice(0, 2) + ":" + period.close.time.slice(2))
+      : 24 * 60
+    return { open: openMinutes, close: closeMinutes }
+  })
+}
+
 export function ScheduleSidebar({
   isOpen,
   onClose,
@@ -105,287 +160,268 @@ export function ScheduleSidebar({
   onRemoveEvent,
   onOpenEventDialog,
 }: ScheduleSidebarProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("week")
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [hoveredEvent, setHoveredEvent] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const dates = useMemo(() => {
-    return viewMode === "week" ? getWeekDates(currentDate) : getMonthDates(currentDate)
-  }, [viewMode, currentDate])
+  const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate])
 
   const eventsByDate = useMemo(() => {
-    const map = new Map<string, ScheduledEvent[]>()
+    const map = new Map<string, (ScheduledEvent & { place: Place })[]>()
     scheduledEvents.forEach((event) => {
+      const place = places.find((p) => p.id === event.placeId)
+      if (!place) return
+      
       const key = event.date
       if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(event)
-    })
-    // Sort events by start time
-    map.forEach((events) => {
-      events.sort((a, b) => a.startTime.localeCompare(b.startTime))
+      map.get(key)!.push({ ...event, place })
     })
     return map
-  }, [scheduledEvents])
+  }, [scheduledEvents, places])
 
-  const getPlaceById = (placeId: string): Place | undefined => {
-    return places.find((p) => p.id === placeId)
-  }
+  // Scroll to 8 AM on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 8 * HOUR_HEIGHT
+    }
+  }, [isOpen])
 
   const navigatePrevious = () => {
     const newDate = new Date(currentDate)
-    if (viewMode === "week") {
-      newDate.setDate(newDate.getDate() - 7)
-    } else {
-      newDate.setMonth(newDate.getMonth() - 1)
-    }
+    newDate.setDate(newDate.getDate() - 7)
     setCurrentDate(newDate)
   }
 
   const navigateNext = () => {
     const newDate = new Date(currentDate)
-    if (viewMode === "week") {
-      newDate.setDate(newDate.getDate() + 7)
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1)
-    }
+    newDate.setDate(newDate.getDate() + 7)
     setCurrentDate(newDate)
   }
 
   const goToToday = () => {
     setCurrentDate(new Date())
-    setSelectedDate(new Date())
   }
 
-  const handleDateClick = (date: Date) => {
-    setSelectedDate(date)
-  }
-
-  const handleDateDoubleClick = (date: Date) => {
-    onOpenEventDialog(formatDateKey(date))
-  }
-
-  const getHeaderText = (): string => {
-    if (viewMode === "week") {
-      const weekDates = getWeekDates(currentDate)
-      const start = weekDates[0]
-      const end = weekDates[6]
-      if (start.getMonth() === end.getMonth()) {
-        return `${MONTHS[start.getMonth()]} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`
-      }
-      return `${MONTHS[start.getMonth()]} ${start.getDate()} - ${MONTHS[end.getMonth()]} ${end.getDate()}, ${start.getFullYear()}`
-    }
-    return `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    const dateKey = formatDateKey(date)
+    const startTime = `${hour.toString().padStart(2, "0")}:00`
+    onOpenEventDialog(dateKey, undefined, startTime)
   }
 
   const today = new Date()
 
-  const selectedDateEvents = selectedDate
-    ? eventsByDate.get(formatDateKey(selectedDate)) || []
-    : []
+  const getHeaderText = (): string => {
+    const start = weekDates[0]
+    const end = weekDates[6]
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    
+    if (start.getMonth() === end.getMonth()) {
+      return `${monthNames[start.getMonth()]} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`
+    }
+    if (start.getFullYear() === end.getFullYear()) {
+      return `${monthNames[start.getMonth()]} ${start.getDate()} - ${monthNames[end.getMonth()]} ${end.getDate()}, ${start.getFullYear()}`
+    }
+    return `${monthNames[start.getMonth()]} ${start.getDate()}, ${start.getFullYear()} - ${monthNames[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`
+  }
 
   if (!isOpen) return null
 
   return (
-    <div className="flex h-full w-96 flex-col border-l bg-background">
+    <div className="flex h-full w-[700px] flex-col border-l bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between border-b p-4">
+      <div className="flex shrink-0 items-center justify-between border-b p-3">
         <div className="flex items-center gap-2">
           <Calendar className="size-5" />
           <h2 className="font-semibold">Schedule</h2>
+          <Badge variant="secondary" className="ml-1">
+            {scheduledEvents.length} events
+          </Badge>
         </div>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="size-4" />
         </Button>
       </div>
 
-      {/* View Toggle & Navigation */}
-      <div className="space-y-3 border-b p-4">
+      {/* Navigation */}
+      <div className="flex shrink-0 items-center justify-between border-b px-3 py-2">
+        <Button variant="ghost" size="icon" onClick={navigatePrevious}>
+          <ChevronLeft className="size-4" />
+        </Button>
         <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{getHeaderText()}</span>
           <Button
-            variant={viewMode === "week" ? "default" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => setViewMode("week")}
-            className="flex-1"
+            onClick={goToToday}
+            className="h-7 px-2 text-xs"
           >
-            Week
-          </Button>
-          <Button
-            variant={viewMode === "month" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("month")}
-            className="flex-1"
-          >
-            Month
+            Today
           </Button>
         </div>
-        
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={navigatePrevious}>
-            <ChevronLeft className="size-4" />
-          </Button>
-          <div className="text-center">
-            <p className="text-sm font-medium">{getHeaderText()}</p>
-            <Button
-              variant="link"
-              size="sm"
-              onClick={goToToday}
-              className="h-auto p-0 text-xs text-muted-foreground"
-            >
-              Today
-            </Button>
-          </div>
-          <Button variant="ghost" size="icon" onClick={navigateNext}>
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
+        <Button variant="ghost" size="icon" onClick={navigateNext}>
+          <ChevronRight className="size-4" />
+        </Button>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="flex-1 overflow-auto p-4">
-        {/* Day Headers */}
-        <div className="mb-2 grid grid-cols-7 gap-1">
-          {DAYS_OF_WEEK.map((day) => (
+      {/* Day Headers */}
+      <div className="flex shrink-0 border-b">
+        {/* Time gutter */}
+        <div className="w-14 shrink-0 border-r" />
+        {/* Day columns */}
+        {weekDates.map((date) => {
+          const isToday = isSameDay(date, today)
+          const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+          
+          return (
             <div
-              key={day}
-              className="py-1 text-center text-xs font-medium text-muted-foreground"
+              key={formatDateKey(date)}
+              className={cn(
+                "flex-1 border-r py-2 text-center last:border-r-0",
+                isToday && "bg-primary/5"
+              )}
             >
-              {day}
+              <div className="text-xs text-muted-foreground">
+                {dayNames[date.getDay()]}
+              </div>
+              <div
+                className={cn(
+                  "mx-auto mt-1 flex size-7 items-center justify-center rounded-full text-sm font-medium",
+                  isToday && "bg-primary text-primary-foreground"
+                )}
+              >
+                {date.getDate()}
+              </div>
             </div>
-          ))}
-        </div>
+          )
+        })}
+      </div>
 
-        {/* Date Cells */}
-        <div className="grid grid-cols-7 gap-1">
-          {dates.map((date) => {
+      {/* Time Grid */}
+      <div ref={scrollRef} className="flex-1 overflow-auto">
+        <div className="relative flex">
+          {/* Time gutter */}
+          <div className="sticky left-0 z-10 w-14 shrink-0 border-r bg-background">
+            {HOURS.map((hour) => (
+              <div
+                key={hour}
+                className="relative border-b"
+                style={{ height: HOUR_HEIGHT }}
+              >
+                <span className="absolute -top-2.5 right-2 text-xs text-muted-foreground">
+                  {formatHour(hour)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Day columns */}
+          {weekDates.map((date) => {
             const dateKey = formatDateKey(date)
-            const events = eventsByDate.get(dateKey) || []
+            const dayEvents = eventsByDate.get(dateKey) || []
             const isToday = isSameDay(date, today)
-            const isSelected = selectedDate && isSameDay(date, selectedDate)
-            const isCurrentMonth = date.getMonth() === currentDate.getMonth()
 
             return (
-              <button
+              <div
                 key={dateKey}
-                onClick={() => handleDateClick(date)}
-                onDoubleClick={() => handleDateDoubleClick(date)}
                 className={cn(
-                  "relative flex aspect-square flex-col items-center justify-start rounded-md p-1 text-sm transition-colors hover:bg-accent",
-                  isToday && "bg-primary/10 font-bold",
-                  isSelected && "ring-2 ring-primary",
-                  !isCurrentMonth && viewMode === "month" && "text-muted-foreground/50"
+                  "relative flex-1 border-r last:border-r-0",
+                  isToday && "bg-primary/5"
                 )}
               >
-                <span className={cn(
-                  "flex size-6 items-center justify-center rounded-full",
-                  isToday && "bg-primary text-primary-foreground"
-                )}>
-                  {date.getDate()}
-                </span>
-                {events.length > 0 && (
-                  <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
-                    {events.slice(0, 3).map((event, i) => (
-                      <div
-                        key={event.id}
-                        className="size-1.5 rounded-full bg-primary"
-                      />
-                    ))}
-                    {events.length > 3 && (
-                      <span className="text-[8px] text-muted-foreground">
-                        +{events.length - 3}
-                      </span>
-                    )}
+                {/* Hour slots */}
+                {HOURS.map((hour) => (
+                  <div
+                    key={hour}
+                    className="cursor-pointer border-b transition-colors hover:bg-accent/50"
+                    style={{ height: HOUR_HEIGHT }}
+                    onClick={() => handleTimeSlotClick(date, hour)}
+                  />
+                ))}
+
+                {/* Current time indicator */}
+                {isToday && (
+                  <div
+                    className="absolute left-0 right-0 z-20 border-t-2 border-red-500"
+                    style={{
+                      top: (today.getHours() * 60 + today.getMinutes()) * (HOUR_HEIGHT / 60),
+                    }}
+                  >
+                    <div className="absolute -left-1 -top-1.5 size-3 rounded-full bg-red-500" />
                   </div>
                 )}
-              </button>
-            )
-          })}
-        </div>
 
-        {/* Selected Date Events */}
-        {selectedDate && (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">
-                {selectedDate.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenEventDialog(formatDateKey(selectedDate))}
-              >
-                <Plus className="mr-1 size-3" />
-                Add
-              </Button>
-            </div>
-
-            {selectedDateEvents.length === 0 ? (
-              <Card className="p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No events scheduled
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Double-click a date or click Add to schedule a place
-                </p>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {selectedDateEvents.map((event) => {
-                  const place = getPlaceById(event.placeId)
-                  if (!place) return null
+                {/* Events */}
+                {dayEvents.map((event) => {
+                  const startMinutes = timeToMinutes(event.startTime)
+                  const top = startMinutes * (HOUR_HEIGHT / 60)
+                  const height = Math.max(event.duration * (HOUR_HEIGHT / 60), 24)
+                  const isHovered = hoveredEvent === event.id
+                  
+                  const openingCheck = isWithinOpeningHours(
+                    event.place,
+                    date,
+                    event.startTime,
+                    event.duration
+                  )
 
                   return (
-                    <Card key={event.id} className="p-3">
-                      <div className="flex items-start gap-3">
-                        {place.photos?.[0] && (
-                          <img
-                            src={place.photos[0]}
-                            alt={place.name}
-                            className="size-12 rounded-md object-cover"
-                          />
-                        )}
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "absolute left-0.5 right-0.5 z-10 cursor-pointer overflow-hidden rounded border bg-primary/90 px-1.5 py-1 text-primary-foreground shadow-sm transition-all",
+                        isHovered && "z-30 ring-2 ring-primary ring-offset-2",
+                        !openingCheck.isOpen && "border-amber-400 bg-amber-500/90"
+                      )}
+                      style={{ top, height }}
+                      onMouseEnter={() => setHoveredEvent(event.id)}
+                      onMouseLeave={() => setHoveredEvent(null)}
+                    >
+                      <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">
-                          <h4 className="truncate text-sm font-medium">
-                            {place.name}
-                          </h4>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            <Clock className="size-3" />
-                            <span>
-                              {formatTime(event.startTime)} ({formatDuration(event.duration)})
-                            </span>
-                          </div>
-                          {event.notes && (
-                            <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                              {event.notes}
+                          <div className="flex items-center gap-1">
+                            {!openingCheck.isOpen && (
+                              <AlertTriangle className="size-3 shrink-0 text-amber-100" />
+                            )}
+                            <p className="truncate text-xs font-medium">
+                              {event.place.name}
                             </p>
+                          </div>
+                          {height >= 40 && (
+                            <div className="mt-0.5 flex items-center gap-1 text-[10px] opacity-90">
+                              <Clock className="size-2.5" />
+                              <span>
+                                {formatTime(event.startTime)} · {formatDuration(event.duration)}
+                              </span>
+                            </div>
                           )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => onRemoveEvent(event.id)}
-                        >
-                          <Trash2 className="size-3" />
-                        </Button>
+                        {isHovered && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-5 shrink-0 bg-background/20 text-primary-foreground hover:bg-background/40 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onRemoveEvent(event.id)
+                            }}
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        )}
                       </div>
-                    </Card>
+                      
+                      {/* Warning tooltip on hover */}
+                      {isHovered && !openingCheck.isOpen && openingCheck.warning && (
+                        <div className="absolute -bottom-12 left-0 right-0 z-40 rounded bg-amber-600 p-1.5 text-[10px] text-white shadow-lg">
+                          {openingCheck.warning}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Footer Stats */}
-      <div className="border-t p-4">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{scheduledEvents.length} events total</span>
-          <span>{places.length} places</span>
+            )
+          })}
         </div>
       </div>
     </div>

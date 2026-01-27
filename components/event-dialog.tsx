@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Calendar, Clock, MapPin } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Calendar, Clock, MapPin, AlertTriangle, Info } from "lucide-react"
 import type { Place, ScheduledEvent } from "./travel-planner"
 
 interface EventDialogProps {
@@ -30,6 +31,7 @@ interface EventDialogProps {
   onSave: (event: Omit<ScheduledEvent, "id">) => void
   initialDate?: string
   initialPlaceId?: string
+  initialStartTime?: string
 }
 
 const DURATION_OPTIONS = [
@@ -44,6 +46,66 @@ const DURATION_OPTIONS = [
   { value: "480", label: "8 hours (full day)" },
 ]
 
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number)
+  return hours * 60 + minutes
+}
+
+function getOpeningHoursInfo(
+  place: Place | undefined,
+  date: string,
+  startTime: string,
+  duration: number
+): { isOpen: boolean; warning?: string; hours?: string } {
+  if (!place?.openingHours?.periods) {
+    return { isOpen: true }
+  }
+
+  const dateObj = new Date(date + "T00:00:00")
+  const dayOfWeek = dateObj.getDay()
+  const startMinutes = timeToMinutes(startTime)
+  const endMinutes = startMinutes + duration
+
+  // Get the weekday text for this day
+  const dayText = place.openingHours.weekdayText?.[dayOfWeek]
+
+  // Find periods for this day
+  const periodsForDay = place.openingHours.periods.filter(
+    (period) => period.open.day === dayOfWeek
+  )
+
+  if (periodsForDay.length === 0) {
+    return {
+      isOpen: false,
+      warning: `${place.name} appears to be closed on this day`,
+      hours: dayText,
+    }
+  }
+
+  // Check if the event time falls within any open period
+  for (const period of periodsForDay) {
+    const openTime = period.open.time
+    const openMinutes = timeToMinutes(
+      openTime.slice(0, 2) + ":" + openTime.slice(2)
+    )
+    const closeMinutes = period.close
+      ? timeToMinutes(
+          period.close.time.slice(0, 2) + ":" + period.close.time.slice(2)
+        )
+      : 24 * 60
+
+    if (startMinutes >= openMinutes && endMinutes <= closeMinutes) {
+      return { isOpen: true, hours: dayText }
+    }
+  }
+
+  return {
+    isOpen: false,
+    warning: "Your scheduled time is outside opening hours",
+    hours: dayText,
+  }
+}
+
 export function EventDialog({
   isOpen,
   onClose,
@@ -51,6 +113,7 @@ export function EventDialog({
   onSave,
   initialDate,
   initialPlaceId,
+  initialStartTime,
 }: EventDialogProps) {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("")
   const [date, setDate] = useState<string>("")
@@ -64,12 +127,24 @@ export function EventDialog({
     if (isOpen) {
       setSelectedPlaceId(initialPlaceId || "")
       setDate(initialDate || new Date().toISOString().split("T")[0])
-      setStartTime("10:00")
+      setStartTime(initialStartTime || "10:00")
       setDuration("120")
       setNotes("")
       setError("")
     }
-  }, [isOpen, initialDate, initialPlaceId])
+  }, [isOpen, initialDate, initialPlaceId, initialStartTime])
+
+  const selectedPlace = places.find((p) => p.id === selectedPlaceId)
+
+  const openingHoursInfo = useMemo(() => {
+    if (!selectedPlaceId || !date || !startTime) return null
+    return getOpeningHoursInfo(
+      selectedPlace,
+      date,
+      startTime,
+      parseInt(duration, 10)
+    )
+  }, [selectedPlace, selectedPlaceId, date, startTime, duration])
 
   const handleSubmit = () => {
     if (!selectedPlaceId) {
@@ -96,8 +171,6 @@ export function EventDialog({
     onClose()
   }
 
-  const selectedPlace = places.find((p) => p.id === selectedPlaceId)
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -107,7 +180,7 @@ export function EventDialog({
             Schedule Event
           </DialogTitle>
           <DialogDescription>
-            Add a place to your schedule for this trip.
+            Add a place to your schedule. Times outside opening hours will show a warning.
           </DialogDescription>
         </DialogHeader>
 
@@ -186,6 +259,24 @@ export function EventDialog({
             </div>
           </div>
 
+          {/* Opening Hours Info/Warning */}
+          {openingHoursInfo && (
+            <>
+              {openingHoursInfo.hours && (
+                <div className="flex items-center gap-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
+                  <Info className="size-3.5 shrink-0" />
+                  <span>Opening hours: {openingHoursInfo.hours}</span>
+                </div>
+              )}
+              {!openingHoursInfo.isOpen && openingHoursInfo.warning && (
+                <Alert variant="default" className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                  <AlertTriangle className="size-4 text-amber-600" />
+                  <AlertDescription>{openingHoursInfo.warning}</AlertDescription>
+                </Alert>
+              )}
+            </>
+          )}
+
           {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes (optional)</Label>
@@ -198,18 +289,14 @@ export function EventDialog({
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
-            Add to Schedule
-          </Button>
+          <Button onClick={handleSubmit}>Add to Schedule</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

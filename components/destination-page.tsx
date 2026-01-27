@@ -44,6 +44,7 @@ export function DestinationPage() {
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [eventDialogInitialDate, setEventDialogInitialDate] = useState<string | undefined>()
   const [eventDialogInitialPlaceId, setEventDialogInitialPlaceId] = useState<string | undefined>()
+  const [eventDialogInitialStartTime, setEventDialogInitialStartTime] = useState<string | undefined>()
 
   useEffect(() => {
     const loadTrip = async () => {
@@ -182,9 +183,10 @@ export function DestinationPage() {
     await updateTrip({ scheduledEvents: updatedEvents })
   }
 
-  const handleOpenEventDialog = (date?: string, placeId?: string) => {
+  const handleOpenEventDialog = (date?: string, placeId?: string, startTime?: string) => {
     setEventDialogInitialDate(date)
     setEventDialogInitialPlaceId(placeId)
+    setEventDialogInitialStartTime(startTime)
     setShowEventDialog(true)
   }
 
@@ -519,6 +521,7 @@ export function DestinationPage() {
         onSave={handleAddScheduledEvent}
         initialDate={eventDialogInitialDate}
         initialPlaceId={eventDialogInitialPlaceId}
+        initialStartTime={eventDialogInitialStartTime}
       />
     </div>
   )
