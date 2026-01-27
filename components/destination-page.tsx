@@ -7,8 +7,10 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info } from "lucide-react"
-import type { Trip, Place } from "./travel-planner"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus } from "lucide-react"
+import type { Trip, Place, ScheduledEvent } from "./travel-planner"
+import { ScheduleSidebar } from "./schedule-sidebar"
+import { EventDialog } from "./event-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -38,6 +40,10 @@ export function DestinationPage() {
     lat: 40.7128,
     lng: -74.006,
   })
+  const [showScheduleSidebar, setShowScheduleSidebar] = useState(false)
+  const [showEventDialog, setShowEventDialog] = useState(false)
+  const [eventDialogInitialDate, setEventDialogInitialDate] = useState<string | undefined>()
+  const [eventDialogInitialPlaceId, setEventDialogInitialPlaceId] = useState<string | undefined>()
 
   useEffect(() => {
     const loadTrip = async () => {
@@ -157,6 +163,35 @@ export function DestinationPage() {
     }
   }
 
+  const handleAddScheduledEvent = async (event: Omit<ScheduledEvent, "id">) => {
+    if (!trip) return
+
+    const newEvent: ScheduledEvent = {
+      ...event,
+      id: crypto.randomUUID(),
+    }
+
+    const updatedEvents = [...(trip.scheduledEvents || []), newEvent]
+    await updateTrip({ scheduledEvents: updatedEvents })
+  }
+
+  const handleRemoveScheduledEvent = async (eventId: string) => {
+    if (!trip) return
+
+    const updatedEvents = (trip.scheduledEvents || []).filter((e) => e.id !== eventId)
+    await updateTrip({ scheduledEvents: updatedEvents })
+  }
+
+  const handleOpenEventDialog = (date?: string, placeId?: string) => {
+    setEventDialogInitialDate(date)
+    setEventDialogInitialPlaceId(placeId)
+    setShowEventDialog(true)
+  }
+
+  const handleScheduleFromPlaceCard = (placeId: string) => {
+    handleOpenEventDialog(undefined, placeId)
+  }
+
   const handlePlaceSelect = useCallback((place: Place) => {
     setSelectedPlace(place)
     setShowPlaceDetails(true)
@@ -216,8 +251,9 @@ export function DestinationPage() {
   const allTags = getAllTags()
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      <header className="flex items-center justify-between border-b p-4">
+    <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
             <ArrowLeft className="size-5" />
@@ -227,9 +263,23 @@ export function DestinationPage() {
             {trip.description && <p className="text-sm text-muted-foreground">{trip.description}</p>}
           </div>
         </div>
-        <Button onClick={() => setShowPlaceSearch(!showPlaceSearch)}>
-          {showPlaceSearch ? "Close Search" : "Add Place"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showScheduleSidebar ? "default" : "outline"}
+            onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+          >
+            <Calendar className="mr-2 size-4" />
+            Schedule
+            {(trip.scheduledEvents?.length ?? 0) > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {trip.scheduledEvents?.length}
+              </Badge>
+            )}
+          </Button>
+          <Button onClick={() => setShowPlaceSearch(!showPlaceSearch)}>
+            {showPlaceSearch ? "Close Search" : "Add Place"}
+          </Button>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -324,6 +374,15 @@ export function DestinationPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => handleScheduleFromPlaceCard(place.id)}
+                              className="size-7"
+                              title="Add to schedule"
+                            >
+                              <CalendarPlus className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handlePlaceSelect(place)}
                               className="size-7"
                             >
@@ -408,7 +467,7 @@ export function DestinationPage() {
         </div>
       </div>
 
-      <Dialog open={!!placeToDelete} onOpenChange={() => setPlaceToDelete(null)}>
+        <Dialog open={!!placeToDelete} onOpenChange={() => setPlaceToDelete(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmation de suppression</DialogTitle>
@@ -427,18 +486,40 @@ export function DestinationPage() {
         </DialogContent>
       </Dialog>
 
-      {showPlaceDetails && selectedPlace && (
-        <PlaceDetails
-          place={selectedPlace}
-          onClose={() => setShowPlaceDetails(false)}
-          trips={[trip]}
-          onAddPlaceToTrip={handleAddPlace}
-          onUpdateImages={handleUpdatePlacePhotos}
-          onUpdateWebsite={handleUpdatePlaceWebsite}
-          onUpdateOpeningHours={handleUpdateOpeningHours}
-          onUpdateTags={handleUpdateTags}
-        />
-      )}
+{showPlaceDetails && selectedPlace && (
+          <PlaceDetails
+            place={selectedPlace}
+            onClose={() => setShowPlaceDetails(false)}
+            trips={[trip]}
+            onAddPlaceToTrip={handleAddPlace}
+            onUpdateImages={handleUpdatePlacePhotos}
+            onUpdateWebsite={handleUpdatePlaceWebsite}
+            onUpdateOpeningHours={handleUpdateOpeningHours}
+            onUpdateTags={handleUpdateTags}
+          />
+        )}
+      </div>
+
+      {/* Schedule Sidebar */}
+      <ScheduleSidebar
+        isOpen={showScheduleSidebar}
+        onClose={() => setShowScheduleSidebar(false)}
+        places={trip.places}
+        scheduledEvents={trip.scheduledEvents || []}
+        onAddEvent={handleAddScheduledEvent}
+        onRemoveEvent={handleRemoveScheduledEvent}
+        onOpenEventDialog={handleOpenEventDialog}
+      />
+
+      {/* Event Creation Dialog */}
+      <EventDialog
+        isOpen={showEventDialog}
+        onClose={() => setShowEventDialog(false)}
+        places={trip.places}
+        onSave={handleAddScheduledEvent}
+        initialDate={eventDialogInitialDate}
+        initialPlaceId={eventDialogInitialPlaceId}
+      />
     </div>
   )
 }
