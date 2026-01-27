@@ -45,6 +45,7 @@ export function DestinationPage() {
   const [eventDialogInitialDate, setEventDialogInitialDate] = useState<string | undefined>()
   const [eventDialogInitialPlaceId, setEventDialogInitialPlaceId] = useState<string | undefined>()
   const [eventDialogInitialStartTime, setEventDialogInitialStartTime] = useState<string | undefined>()
+  const [editingEvent, setEditingEvent] = useState<ScheduledEvent | undefined>()
 
   useEffect(() => {
     const loadTrip = async () => {
@@ -183,7 +184,22 @@ export function DestinationPage() {
     await updateTrip({ scheduledEvents: updatedEvents })
   }
 
+  const handleUpdateScheduledEvent = async (eventId: string, eventData: Omit<ScheduledEvent, "id">) => {
+    if (!trip) return
+
+    const updatedEvents = (trip.scheduledEvents || []).map((e) =>
+      e.id === eventId ? { ...eventData, id: eventId } : e
+    )
+    await updateTrip({ scheduledEvents: updatedEvents })
+  }
+
+  const handleEditEvent = (event: ScheduledEvent) => {
+    setEditingEvent(event)
+    setShowEventDialog(true)
+  }
+
   const handleOpenEventDialog = (date?: string, placeId?: string, startTime?: string) => {
+    setEditingEvent(undefined) // Clear any editing state
     setEventDialogInitialDate(date)
     setEventDialogInitialPlaceId(placeId)
     setEventDialogInitialStartTime(startTime)
@@ -511,17 +527,23 @@ export function DestinationPage() {
         onAddEvent={handleAddScheduledEvent}
         onRemoveEvent={handleRemoveScheduledEvent}
         onOpenEventDialog={handleOpenEventDialog}
+        onEditEvent={handleEditEvent}
       />
 
       {/* Event Creation Dialog */}
       <EventDialog
         isOpen={showEventDialog}
-        onClose={() => setShowEventDialog(false)}
+        onClose={() => {
+          setShowEventDialog(false)
+          setEditingEvent(undefined)
+        }}
         places={trip.places}
         onSave={handleAddScheduledEvent}
+        onUpdate={handleUpdateScheduledEvent}
         initialDate={eventDialogInitialDate}
         initialPlaceId={eventDialogInitialPlaceId}
         initialStartTime={eventDialogInitialStartTime}
+        editingEvent={editingEvent}
       />
     </div>
   )

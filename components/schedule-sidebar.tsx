@@ -23,6 +23,7 @@ interface ScheduleSidebarProps {
   onAddEvent: (event: Omit<ScheduledEvent, "id">) => void
   onRemoveEvent: (eventId: string) => void
   onOpenEventDialog: (date?: string, placeId?: string, startTime?: string) => void
+  onEditEvent: (event: ScheduledEvent) => void
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -158,6 +159,14 @@ function getOpeningHoursForDay(place: Place, date: Date): { open: number; close:
   })
 }
 
+// Check if a date+hour is in the past
+function isTimeSlotInPast(date: Date, hour: number): boolean {
+  const now = new Date()
+  const slotTime = new Date(date)
+  slotTime.setHours(hour, 0, 0, 0)
+  return slotTime < now
+}
+
 export function ScheduleSidebar({
   isOpen,
   onClose,
@@ -165,6 +174,7 @@ export function ScheduleSidebar({
   scheduledEvents,
   onRemoveEvent,
   onOpenEventDialog,
+  onEditEvent,
 }: ScheduleSidebarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null)
@@ -209,6 +219,10 @@ export function ScheduleSidebar({
   }
 
   const handleTimeSlotClick = (date: Date, hour: number) => {
+    // Don't allow creating events in the past
+    if (isTimeSlotInPast(date, hour)) {
+      return
+    }
     const dateKey = formatDateKey(date)
     const startTime = `${hour.toString().padStart(2, "0")}:00`
     onOpenEventDialog(dateKey, undefined, startTime)
@@ -335,14 +349,22 @@ export function ScheduleSidebar({
                 )}
               >
                 {/* Hour slots */}
-                {HOURS.map((hour) => (
-                  <div
-                    key={hour}
-                    className="cursor-pointer border-b transition-colors hover:bg-accent/50"
-                    style={{ height: HOUR_HEIGHT }}
-                    onClick={() => handleTimeSlotClick(date, hour)}
-                  />
-                ))}
+                {HOURS.map((hour) => {
+                  const isPast = isTimeSlotInPast(date, hour)
+                  return (
+                    <div
+                      key={hour}
+                      className={cn(
+                        "border-b transition-colors",
+                        isPast 
+                          ? "cursor-not-allowed bg-muted/30" 
+                          : "cursor-pointer hover:bg-accent/50"
+                      )}
+                      style={{ height: HOUR_HEIGHT }}
+                      onClick={() => handleTimeSlotClick(date, hour)}
+                    />
+                  )
+                })}
 
                 {/* Current time indicator */}
                 {isToday && (
@@ -381,6 +403,7 @@ export function ScheduleSidebar({
                       style={{ top, height }}
                       onMouseEnter={() => setHoveredEvent(event.id)}
                       onMouseLeave={() => setHoveredEvent(null)}
+                      onClick={() => onEditEvent(event)}
                     >
                       <div className="flex items-start justify-between gap-1">
                         <div className="min-w-0 flex-1">

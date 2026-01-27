@@ -30,9 +30,11 @@ interface EventDialogProps {
   onClose: () => void
   places: Place[]
   onSave: (event: Omit<ScheduledEvent, "id">) => void
+  onUpdate?: (eventId: string, event: Omit<ScheduledEvent, "id">) => void
   initialDate?: string
   initialPlaceId?: string
   initialStartTime?: string
+  editingEvent?: ScheduledEvent // If provided, we're editing an existing event
 }
 
 const DURATION_OPTIONS = [
@@ -112,14 +114,33 @@ function getOpeningHoursInfo(
   }
 }
 
+// Get today's date in local timezone for min date validation
+function getTodayDateString(): string {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = (today.getMonth() + 1).toString().padStart(2, "0")
+  const day = today.getDate().toString().padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+// Check if a date+time is in the past
+function isInPast(date: string, time: string): boolean {
+  const [year, month, day] = date.split("-").map(Number)
+  const [hours, minutes] = time.split(":").map(Number)
+  const eventDate = new Date(year, month - 1, day, hours, minutes)
+  return eventDate < new Date()
+}
+
 export function EventDialog({
   isOpen,
   onClose,
   places,
   onSave,
+  onUpdate,
   initialDate,
   initialPlaceId,
   initialStartTime,
+  editingEvent,
 }: EventDialogProps) {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("")
   const [date, setDate] = useState<string>("")
@@ -128,17 +149,30 @@ export function EventDialog({
   const [notes, setNotes] = useState<string>("")
   const [error, setError] = useState<string>("")
 
+  const isEditing = !!editingEvent
+  const todayStr = getTodayDateString()
+
   // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
-      setSelectedPlaceId(initialPlaceId || "")
-      setDate(initialDate || new Date().toISOString().split("T")[0])
-      setStartTime(initialStartTime || "10:00")
-      setDuration("120")
-      setNotes("")
+      if (editingEvent) {
+        // Editing mode - populate with existing event data
+        setSelectedPlaceId(editingEvent.placeId)
+        setDate(editingEvent.date)
+        setStartTime(editingEvent.startTime)
+        setDuration(editingEvent.duration.toString())
+        setNotes(editingEvent.notes || "")
+      } else {
+        // Create mode
+        setSelectedPlaceId(initialPlaceId || "")
+        setDate(initialDate || todayStr)
+        setStartTime(initialStartTime || "10:00")
+        setDuration("120")
+        setNotes("")
+      }
       setError("")
     }
-  }, [isOpen, initialDate, initialPlaceId, initialStartTime])
+  }, [isOpen, initialDate, initialPlaceId, initialStartTime, editingEvent, todayStr])
 
   const selectedPlace = places.find((p) => p.id === selectedPlaceId)
 
@@ -165,28 +199,43 @@ export function EventDialog({
       setError("Please select a start time")
       return
     }
+    
+    // Check if the event is in the past
+    if (isInPast(date, startTime)) {
+      setError("Cannot schedule events in the past")
+      return
+    }
 
-    onSave({
+    const eventData = {
       placeId: selectedPlaceId,
       date,
       startTime,
       duration: parseInt(duration, 10),
       notes: notes.trim() || undefined,
-    })
+    }
+
+    if (isEditing && editingEvent && onUpdate) {
+      onUpdate(editingEvent.id, eventData)
+    } else {
+      onSave(eventData)
+    }
 
     onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="size-5" />
-            Schedule Event
+            {isEditing ? "Edit Event" : "Schedule Event"}
           </DialogTitle>
           <DialogDescription>
-            Add a place to your schedule. Times outside opening hours will show a warning.
+            {isEditing 
+              ? "Update the date, time, or details of this event."
+              : "Add a place to your schedule. Times outside opening hours will show a warning."
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -230,6 +279,7 @@ export function EventDialog({
               id="date"
               type="date"
               value={date}
+              min={todayStr}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
@@ -326,7 +376,9 @@ export function EventDialog({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Add to Schedule</Button>
+          <Button onClick={handleSubmit}>
+            {isEditing ? "Update Event" : "Add to Schedule"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
