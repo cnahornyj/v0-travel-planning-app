@@ -69,7 +69,10 @@ function isSameDay(d1: Date, d2: Date): boolean {
 }
 
 function formatDateKey(date: Date): string {
-  return date.toISOString().split("T")[0]
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const day = date.getDate().toString().padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 function timeToMinutes(time: string): number {
@@ -90,7 +93,7 @@ function isWithinOpeningHours(
   startTime: string,
   duration: number
 ): { isOpen: boolean; warning?: string } {
-  if (!place.openingHours?.periods) {
+  if (!place.openingHours?.periods || place.openingHours.periods.length === 0) {
     return { isOpen: true } // No opening hours data, assume open
   }
 
@@ -103,10 +106,15 @@ function isWithinOpeningHours(
     (period) => period.open.day === dayOfWeek
   )
 
+  // Get the opening hours text for this day (weekdayText uses Monday=0 indexing sometimes)
+  // Try to get the text - Google uses different indexing so we try both
+  const dayText = place.openingHours.weekdayText?.[dayOfWeek] || 
+                  place.openingHours.weekdayText?.[dayOfWeek === 0 ? 6 : dayOfWeek - 1]
+
   if (periodsForDay.length === 0) {
     return {
       isOpen: false,
-      warning: `${place.name} appears to be closed on ${date.toLocaleDateString("en-US", { weekday: "long" })}`,
+      warning: dayText || `${place.name} appears to be closed on ${date.toLocaleDateString("en-US", { weekday: "long" })}`,
     }
   }
 
@@ -122,12 +130,10 @@ function isWithinOpeningHours(
     }
   }
 
-  // Get the opening hours text for this day if available
-  const dayText = place.openingHours.weekdayText?.[dayOfWeek]
   return {
     isOpen: false,
     warning: dayText
-      ? `Outside opening hours: ${dayText}`
+      ? `Outside: ${dayText}`
       : `Event time may be outside opening hours`,
   }
 }

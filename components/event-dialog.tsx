@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Calendar, Clock, MapPin, AlertTriangle, Info } from "lucide-react"
+import { Calendar, Clock, MapPin, AlertTriangle } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type { Place, ScheduledEvent } from "./travel-planner"
 
 interface EventDialogProps {
@@ -57,17 +58,22 @@ function getOpeningHoursInfo(
   startTime: string,
   duration: number
 ): { isOpen: boolean; warning?: string; hours?: string } {
-  if (!place?.openingHours?.periods) {
+  if (!place?.openingHours?.periods || place.openingHours.periods.length === 0) {
     return { isOpen: true }
   }
 
-  const dateObj = new Date(date + "T00:00:00")
+  // Parse date parts manually to avoid timezone issues
+  const [year, month, day] = date.split("-").map(Number)
+  const dateObj = new Date(year, month - 1, day)
   const dayOfWeek = dateObj.getDay()
   const startMinutes = timeToMinutes(startTime)
   const endMinutes = startMinutes + duration
 
   // Get the weekday text for this day
-  const dayText = place.openingHours.weekdayText?.[dayOfWeek]
+  // Google weekdayText can use different indexing (Sunday=0 or Monday=0)
+  // Try to get the text for this day
+  const dayText = place.openingHours.weekdayText?.[dayOfWeek] || 
+                  place.openingHours.weekdayText?.[dayOfWeek === 0 ? 6 : dayOfWeek - 1]
 
   // Find periods for this day
   const periodsForDay = place.openingHours.periods.filter(
@@ -77,8 +83,8 @@ function getOpeningHoursInfo(
   if (periodsForDay.length === 0) {
     return {
       isOpen: false,
-      warning: `${place.name} appears to be closed on this day`,
-      hours: dayText,
+      warning: `This place appears to be closed on this day`,
+      hours: dayText || "Closed",
     }
   }
 
@@ -259,22 +265,46 @@ export function EventDialog({
             </div>
           </div>
 
-          {/* Opening Hours Info/Warning */}
-          {openingHoursInfo && (
-            <>
-              {openingHoursInfo.hours && (
-                <div className="flex items-center gap-2 rounded-md bg-muted p-2 text-xs text-muted-foreground">
-                  <Info className="size-3.5 shrink-0" />
-                  <span>Opening hours: {openingHoursInfo.hours}</span>
+          {/* Opening Hours Display */}
+          {selectedPlace?.openingHours?.weekdayText && selectedPlace.openingHours.weekdayText.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="size-3" />
+                Opening Hours
+              </Label>
+              <div className="rounded-md border bg-muted/50 p-3">
+                <div className="grid gap-1 text-xs">
+                  {selectedPlace.openingHours.weekdayText.map((text, index) => {
+                    // Parse date to get the day of week for comparison
+                    const [year, month, day] = date.split("-").map(Number)
+                    const selectedDate = new Date(year, month - 1, day)
+                    const selectedDayOfWeek = selectedDate.getDay()
+                    // weekdayText is usually in order starting from Sunday or Monday
+                    const isSelectedDay = index === selectedDayOfWeek || index === (selectedDayOfWeek === 0 ? 6 : selectedDayOfWeek - 1)
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex justify-between rounded px-2 py-0.5",
+                          isSelectedDay && "bg-primary/10 font-medium text-primary"
+                        )}
+                      >
+                        <span>{text}</span>
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
-              {!openingHoursInfo.isOpen && openingHoursInfo.warning && (
-                <Alert variant="default" className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-                  <AlertTriangle className="size-4 text-amber-600" />
-                  <AlertDescription>{openingHoursInfo.warning}</AlertDescription>
-                </Alert>
-              )}
-            </>
+              </div>
+            </div>
+          )}
+
+          {/* Warning if outside opening hours */}
+          {openingHoursInfo && !openingHoursInfo.isOpen && openingHoursInfo.warning && (
+            <Alert variant="default" className="border-amber-500 bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+              <AlertTriangle className="size-4 text-amber-600" />
+              <AlertDescription>{openingHoursInfo.warning}</AlertDescription>
+            </Alert>
           )}
 
           {/* Notes */}
