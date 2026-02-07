@@ -32,6 +32,7 @@ interface PlaceDetailsProps {
   onUpdateWebsite?: (placeId: string, website: string) => void
   onUpdateTags?: (placeId: string, tags: string[]) => void
   onUpdateOpeningHours?: (placeId: string, weekdayText: string[]) => void
+  onUpdateName?: (placeId: string, name: string) => void
 }
 
 export function PlaceDetails({
@@ -43,6 +44,7 @@ export function PlaceDetails({
   onUpdateWebsite,
   onUpdateTags,
   onUpdateOpeningHours,
+  onUpdateName,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -55,6 +57,8 @@ export function PlaceDetails({
   const [isAddingHours, setIsAddingHours] = useState(false)
   const [isEditingTags, setIsEditingTags] = useState(false)
   const [newTag, setNewTag] = useState("")
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(detailedPlace.name)
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -70,6 +74,20 @@ export function PlaceDetails({
   const handleOverlayClick = (event: React.MouseEvent) => {
     if (event.target === event.currentTarget) {
       onClose()
+    }
+  }
+
+  const handleUpdateName = async () => {
+    if (!onUpdateName || !editedName.trim()) return
+
+    const trimmedName = editedName.trim()
+    setDetailedPlace((prev) => ({ ...prev, name: trimmedName }))
+
+    try {
+      await onUpdateName(detailedPlace.id, trimmedName)
+      setIsEditingName(false)
+    } catch (error) {
+      console.error("[v0] Error saving place name:", error)
     }
   }
 
@@ -334,7 +352,43 @@ export function PlaceDetails({
       <Card className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden">
         <div className="z-10 flex flex-shrink-0 items-start justify-between border-b bg-card p-6">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold leading-tight">{detailedPlace.name}</h2>
+            {isEditingName ? (
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                autoFocus
+                className="text-2xl font-bold"
+                onBlur={() => {
+                  if (editedName.trim()) {
+                    handleUpdateName()
+                  } else {
+                    setEditedName(detailedPlace.name)
+                    setIsEditingName(false)
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur()
+                  } else if (e.key === "Escape") {
+                    setEditedName(detailedPlace.name)
+                    setIsEditingName(false)
+                  }
+                }}
+              />
+            ) : (
+              <h2
+                className={`text-2xl font-bold leading-tight ${onUpdateName ? "cursor-pointer hover:text-primary" : ""}`}
+                onClick={() => {
+                  if (onUpdateName) {
+                    setEditedName(detailedPlace.name)
+                    setIsEditingName(true)
+                  }
+                }}
+                title={onUpdateName ? "Cliquer pour modifier le nom" : undefined}
+              >
+                {detailedPlace.name}
+              </h2>
+            )}
             <p className="mt-1 text-sm text-muted-foreground">{detailedPlace.address}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="flex-shrink-0">

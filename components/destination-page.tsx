@@ -33,6 +33,7 @@ export function DestinationPage() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState<string | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [placeToDelete, setPlaceToDelete] = useState<Place | null>(null)
@@ -133,6 +134,17 @@ export function DestinationPage() {
 
     if (selectedPlace?.id === placeId) {
       setSelectedPlace((prev) => (prev ? { ...prev, website } : null))
+    }
+  }
+
+  const handleUpdatePlaceName = async (placeId: string, name: string) => {
+    if (!trip || !name.trim()) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, name: name.trim() } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, name: name.trim() } : null))
     }
   }
 
@@ -387,7 +399,34 @@ export function DestinationPage() {
 
                       <div className="ml-4 flex min-w-0 flex-1 flex-col">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="truncate text-base font-bold">{place.name}</h3>
+                          {editingName === place.id ? (
+                            <Input
+                              defaultValue={place.name}
+                              autoFocus
+                              className="h-7 text-base font-bold"
+                              onBlur={(e) => {
+                                if (e.target.value.trim()) {
+                                  handleUpdatePlaceName(place.id, e.target.value)
+                                }
+                                setEditingName(null)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.currentTarget.blur()
+                                } else if (e.key === "Escape") {
+                                  setEditingName(null)
+                                }
+                              }}
+                            />
+                          ) : (
+                            <h3
+                              className="cursor-pointer truncate text-base font-bold hover:text-primary"
+                              onClick={() => setEditingName(place.id)}
+                              title="Cliquer pour modifier le nom"
+                            >
+                              {place.name}
+                            </h3>
+                          )}
                           <div className="flex shrink-0 items-center gap-1">
                             <Button
                               variant="ghost"
@@ -514,6 +553,7 @@ export function DestinationPage() {
             onUpdateWebsite={handleUpdatePlaceWebsite}
             onUpdateOpeningHours={handleUpdateOpeningHours}
             onUpdateTags={handleUpdateTags}
+            onUpdateName={handleUpdatePlaceName}
           />
         )}
       </div>
