@@ -21,6 +21,7 @@ export interface Place {
   saved?: boolean
   notes?: string
   tags?: string[]
+  estimatedDuration?: number // in minutes
   visitPreference?: "morning" | "afternoon" | "evening" | "night" | "anytime"
   phone?: string
   website?: string
