@@ -20,6 +20,7 @@ import {
   Edit2,
   Check,
   Clock,
+  Euro,
 } from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
 
@@ -34,6 +35,7 @@ interface PlaceDetailsProps {
   onUpdateOpeningHours?: (placeId: string, weekdayText: string[]) => void
   onUpdateName?: (placeId: string, name: string) => void
   onUpdateEstimatedDuration?: (placeId: string, duration: number | undefined) => void
+  onUpdatePrice?: (placeId: string, price: string | undefined) => void
 }
 
 export function PlaceDetails({
@@ -47,6 +49,7 @@ export function PlaceDetails({
   onUpdateOpeningHours,
   onUpdateName,
   onUpdateEstimatedDuration,
+  onUpdatePrice,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -63,6 +66,8 @@ export function PlaceDetails({
   const [editedName, setEditedName] = useState(detailedPlace.name)
   const [isEditingDuration, setIsEditingDuration] = useState(false)
   const [durationValue, setDurationValue] = useState(detailedPlace.estimatedDuration?.toString() || "")
+  const [isEditingPrice, setIsEditingPrice] = useState(false)
+  const [priceValue, setPriceValue] = useState(detailedPlace.price || "")
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -108,6 +113,20 @@ export function PlaceDetails({
       setIsEditingDuration(false)
     } catch (error) {
       console.error("[v0] Error saving estimated duration:", error)
+    }
+  }
+
+  const handleUpdatePrice = async () => {
+    if (!onUpdatePrice) return
+
+    const trimmed = priceValue.trim() || undefined
+    setDetailedPlace((prev) => ({ ...prev, price: trimmed }))
+
+    try {
+      await onUpdatePrice(detailedPlace.id, trimmed)
+      setIsEditingPrice(false)
+    } catch (error) {
+      console.error("[v0] Error saving price:", error)
     }
   }
 
@@ -572,6 +591,68 @@ export function PlaceDetails({
                       ? `${Math.floor(detailedPlace.estimatedDuration / 60)}h${detailedPlace.estimatedDuration % 60 > 0 ? ` ${detailedPlace.estimatedDuration % 60}min` : ""}`
                       : `${detailedPlace.estimatedDuration} minutes`
                     : "Non défini"}
+                </p>
+              )}
+            </div>
+
+            {/* Price */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Euro className="size-4" />
+                  <span className="text-sm font-medium">Prix:</span>
+                </div>
+                {onUpdatePrice && !isEditingPrice && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => {
+                      setPriceValue(detailedPlace.price || "")
+                      setIsEditingPrice(true)
+                    }}
+                  >
+                    <Edit2 className="size-3" />
+                  </Button>
+                )}
+              </div>
+
+              {isEditingPrice ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Ex: 15€, Gratuit, 10-20€"
+                    value={priceValue}
+                    onChange={(e) => setPriceValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleUpdatePrice()
+                      } else if (e.key === "Escape") {
+                        setIsEditingPrice(false)
+                        setPriceValue(detailedPlace.price || "")
+                      }
+                    }}
+                    className="flex-1 text-sm"
+                    autoFocus
+                  />
+                  <Button onClick={handleUpdatePrice} size="sm">
+                    <Check className="mr-1 size-3" />
+                    OK
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingPrice(false)
+                      setPriceValue(detailedPlace.price || "")
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {detailedPlace.price || "Non défini"}
                 </p>
               )}
             </div>

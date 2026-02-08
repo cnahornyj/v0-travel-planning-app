@@ -22,6 +22,7 @@ export interface Place {
   notes?: string
   tags?: string[]
   estimatedDuration?: number // in minutes
+  price?: string // free-text price field, e.g. "15€", "Gratuit", "10-20€"
   visitPreference?: "morning" | "afternoon" | "evening" | "night" | "anytime"
   phone?: string
   website?: string

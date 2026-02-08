@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro } from "lucide-react"
 import type { Trip, Place, ScheduledEvent } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
@@ -146,6 +146,17 @@ export function DestinationPage() {
 
     if (selectedPlace?.id === placeId) {
       setSelectedPlace((prev) => (prev ? { ...prev, name: name.trim() } : null))
+    }
+  }
+
+  const handleUpdatePrice = async (placeId: string, price: string | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, price } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, price } : null))
     }
   }
 
@@ -491,6 +502,18 @@ export function DestinationPage() {
                                 : `${place.estimatedDuration}min`
                               : "Non défini"}
                           </Badge>
+                          <Badge
+                            variant="outline"
+                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
+                            onClick={() => {
+                              setSelectedPlace(place)
+                              setShowPlaceDetails(true)
+                            }}
+                            title="Prix"
+                          >
+                            <Euro className="size-2.5" />
+                            {place.price || "Non défini"}
+                          </Badge>
                         </div>
 
                         <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
@@ -585,6 +608,7 @@ export function DestinationPage() {
             onUpdateTags={handleUpdateTags}
             onUpdateName={handleUpdatePlaceName}
             onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
+            onUpdatePrice={handleUpdatePrice}
           />
         )}
       </div>
