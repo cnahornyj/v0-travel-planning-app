@@ -20,6 +20,7 @@ import {
   Edit2,
   Check,
   Clock,
+  Euro,
 } from "lucide-react"
 import type { Place, Trip } from "./travel-planner"
 
@@ -32,6 +33,9 @@ interface PlaceDetailsProps {
   onUpdateWebsite?: (placeId: string, website: string) => void
   onUpdateTags?: (placeId: string, tags: string[]) => void
   onUpdateOpeningHours?: (placeId: string, weekdayText: string[]) => void
+  onUpdateName?: (placeId: string, name: string) => void
+  onUpdateEstimatedDuration?: (placeId: string, duration: number | undefined) => void
+  onUpdatePrice?: (placeId: string, price: string | undefined) => void
 }
 
 export function PlaceDetails({
@@ -43,6 +47,9 @@ export function PlaceDetails({
   onUpdateWebsite,
   onUpdateTags,
   onUpdateOpeningHours,
+  onUpdateName,
+  onUpdateEstimatedDuration,
+  onUpdatePrice,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -55,6 +62,12 @@ export function PlaceDetails({
   const [isAddingHours, setIsAddingHours] = useState(false)
   const [isEditingTags, setIsEditingTags] = useState(false)
   const [newTag, setNewTag] = useState("")
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState(detailedPlace.name)
+  const [isEditingDuration, setIsEditingDuration] = useState(false)
+  const [durationValue, setDurationValue] = useState(detailedPlace.estimatedDuration?.toString() || "")
+  const [isEditingPrice, setIsEditingPrice] = useState(false)
+  const [priceValue, setPriceValue] = useState(detailedPlace.price || "")
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -70,6 +83,50 @@ export function PlaceDetails({
   const handleOverlayClick = (event: React.MouseEvent) => {
     if (event.target === event.currentTarget) {
       onClose()
+    }
+  }
+
+  const handleUpdateName = async () => {
+    if (!onUpdateName || !editedName.trim()) return
+
+    const trimmedName = editedName.trim()
+    setDetailedPlace((prev) => ({ ...prev, name: trimmedName }))
+
+    try {
+      await onUpdateName(detailedPlace.id, trimmedName)
+      setIsEditingName(false)
+    } catch (error) {
+      console.error("[v0] Error saving place name:", error)
+    }
+  }
+
+  const handleUpdateEstimatedDuration = async () => {
+    if (!onUpdateEstimatedDuration) return
+
+    const mins = durationValue.trim() ? parseInt(durationValue.trim(), 10) : undefined
+    if (durationValue.trim() && (isNaN(mins!) || mins! <= 0)) return
+
+    setDetailedPlace((prev) => ({ ...prev, estimatedDuration: mins }))
+
+    try {
+      await onUpdateEstimatedDuration(detailedPlace.id, mins)
+      setIsEditingDuration(false)
+    } catch (error) {
+      console.error("[v0] Error saving estimated duration:", error)
+    }
+  }
+
+  const handleUpdatePrice = async () => {
+    if (!onUpdatePrice) return
+
+    const trimmed = priceValue.trim() || undefined
+    setDetailedPlace((prev) => ({ ...prev, price: trimmed }))
+
+    try {
+      await onUpdatePrice(detailedPlace.id, trimmed)
+      setIsEditingPrice(false)
+    } catch (error) {
+      console.error("[v0] Error saving price:", error)
     }
   }
 
@@ -334,7 +391,43 @@ export function PlaceDetails({
       <Card className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden">
         <div className="z-10 flex flex-shrink-0 items-start justify-between border-b bg-card p-6">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold leading-tight">{detailedPlace.name}</h2>
+            {isEditingName ? (
+              <Input
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                autoFocus
+                className="text-2xl font-bold"
+                onBlur={() => {
+                  if (editedName.trim()) {
+                    handleUpdateName()
+                  } else {
+                    setEditedName(detailedPlace.name)
+                    setIsEditingName(false)
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur()
+                  } else if (e.key === "Escape") {
+                    setEditedName(detailedPlace.name)
+                    setIsEditingName(false)
+                  }
+                }}
+              />
+            ) : (
+              <h2
+                className={`text-2xl font-bold leading-tight ${onUpdateName ? "cursor-pointer hover:text-primary" : ""}`}
+                onClick={() => {
+                  if (onUpdateName) {
+                    setEditedName(detailedPlace.name)
+                    setIsEditingName(true)
+                  }
+                }}
+                title={onUpdateName ? "Cliquer pour modifier le nom" : undefined}
+              >
+                {detailedPlace.name}
+              </h2>
+            )}
             <p className="mt-1 text-sm text-muted-foreground">{detailedPlace.address}</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="flex-shrink-0">
@@ -432,6 +525,137 @@ export function PlaceDetails({
             </div>
 
             {formatOpeningHours()}
+
+            {/* Estimated Visit Duration */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4" />
+                  <span className="text-sm font-medium">Durée estimée de visite:</span>
+                </div>
+                {onUpdateEstimatedDuration && !isEditingDuration && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => {
+                      setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
+                      setIsEditingDuration(true)
+                    }}
+                  >
+                    <Edit2 className="size-3" />
+                  </Button>
+                )}
+              </div>
+
+              {isEditingDuration ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    step={15}
+                    placeholder="Ex: 120"
+                    value={durationValue}
+                    onChange={(e) => setDurationValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleUpdateEstimatedDuration()
+                      } else if (e.key === "Escape") {
+                        setIsEditingDuration(false)
+                        setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
+                      }
+                    }}
+                    className="w-24 text-sm"
+                    autoFocus
+                  />
+                  <span className="text-sm text-muted-foreground">minutes</span>
+                  <Button onClick={handleUpdateEstimatedDuration} size="sm">
+                    <Check className="mr-1 size-3" />
+                    OK
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingDuration(false)
+                      setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {detailedPlace.estimatedDuration
+                    ? detailedPlace.estimatedDuration >= 60
+                      ? `${Math.floor(detailedPlace.estimatedDuration / 60)}h${detailedPlace.estimatedDuration % 60 > 0 ? ` ${detailedPlace.estimatedDuration % 60}min` : ""}`
+                      : `${detailedPlace.estimatedDuration} minutes`
+                    : "Non défini"}
+                </p>
+              )}
+            </div>
+
+            {/* Price */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Euro className="size-4" />
+                  <span className="text-sm font-medium">Prix:</span>
+                </div>
+                {onUpdatePrice && !isEditingPrice && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => {
+                      setPriceValue(detailedPlace.price || "")
+                      setIsEditingPrice(true)
+                    }}
+                  >
+                    <Edit2 className="size-3" />
+                  </Button>
+                )}
+              </div>
+
+              {isEditingPrice ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Ex: 15€, Gratuit, 10-20€"
+                    value={priceValue}
+                    onChange={(e) => setPriceValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleUpdatePrice()
+                      } else if (e.key === "Escape") {
+                        setIsEditingPrice(false)
+                        setPriceValue(detailedPlace.price || "")
+                      }
+                    }}
+                    className="flex-1 text-sm"
+                    autoFocus
+                  />
+                  <Button onClick={handleUpdatePrice} size="sm">
+                    <Check className="mr-1 size-3" />
+                    OK
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingPrice(false)
+                      setPriceValue(detailedPlace.price || "")
+                    }}
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {detailedPlace.price || "Non défini"}
+                </p>
+              )}
+            </div>
 
             <div className="space-y-2">
               {detailedPlace.phone && (

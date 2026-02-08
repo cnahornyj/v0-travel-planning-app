@@ -61,47 +61,26 @@ export function PlaceSearch({
     if (!query.trim()) return
 
     try {
-      if (!window.google || !window.google.maps || !window.google.maps.places) {
-        console.log("[v0] Google Maps API not loaded yet")
-        return
-      }
+      const res = await fetch(`/api/places/search?query=${encodeURIComponent(query + " city")}`)
+      const data = await res.json()
 
-      const service = new window.google.maps.places.PlacesService(document.createElement("div"))
-
-      const request: any = {
-        query: query + " city",
-      }
-
-      service.textSearch(request, (results, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
-          const place = results[0]
-          const location = place.geometry?.location
-
-          if (location) {
-            const newLocation = {
-              lat: location.lat(),
-              lng: location.lng(),
-              name: place.formatted_address || place.name || query,
-            }
-
-            setCurrentLocation(newLocation)
-            onLocationChange?.(newLocation)
-
-            searchPlaces("", selectedType || undefined, newLocation)
-          }
-        } else {
-          console.log("[v0] Location search failed, using fallback")
-          const fallbackLocation = {
-            lat: 0,
-            lng: 0,
-            name: query,
-          }
-          setCurrentLocation(fallbackLocation)
-          onLocationChange?.(fallbackLocation)
-
-          searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+      if (data.places && data.places.length > 0) {
+        const place = data.places[0]
+        const newLocation = {
+          lat: place.lat,
+          lng: place.lng,
+          name: place.address || place.name || query,
         }
-      })
+
+        setCurrentLocation(newLocation)
+        onLocationChange?.(newLocation)
+        searchPlaces("", selectedType || undefined, newLocation)
+      } else {
+        const fallbackLocation = { lat: 0, lng: 0, name: query }
+        setCurrentLocation(fallbackLocation)
+        onLocationChange?.(fallbackLocation)
+        searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+      }
     } catch (error) {
       console.error("[v0] Error searching location:", error)
     }
@@ -111,14 +90,6 @@ export function PlaceSearch({
     setIsLoading(true)
 
     try {
-      if (!window.google || !window.google.maps || !window.google.maps.places) {
-        console.log("[v0] Google Maps API not loaded yet")
-        setIsLoading(false)
-        return
-      }
-
-      const service = new window.google.maps.places.PlacesService(document.createElement("div"))
-
       let searchQuery = query
       if (!searchQuery) {
         if (type) {
@@ -131,44 +102,24 @@ export function PlaceSearch({
         searchQuery = `${query} in ${location.name}`
       }
 
-      const request: any = {
-        query: searchQuery,
-      }
-
+      const params = new URLSearchParams({ query: searchQuery })
       if (location.lat !== 0 && location.lng !== 0) {
-        request.location = new window.google.maps.LatLng(location.lat, location.lng)
-        request.radius = 50000
+        params.set("lat", location.lat.toString())
+        params.set("lng", location.lng.toString())
       }
 
-      console.log("[v0] Searching places with query:", searchQuery)
+      const res = await fetch(`/api/places/search?${params.toString()}`)
+      const data = await res.json()
 
-      service.textSearch(request, (results, status) => {
-        console.log("[v0] Search status:", status)
-        console.log("[v0] Search results count:", results?.length || 0)
-
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-          const places: Place[] = results.slice(0, 10).map((place, index) => ({
-            id: place.place_id || `place-${index}`,
-            name: place.name || "Unknown Place",
-            address: place.formatted_address || "Address not available",
-            lat: place.geometry?.location?.lat() || 0,
-            lng: place.geometry?.location?.lng() || 0,
-            type: place.types?.[0],
-            rating: place.rating,
-            photos: place.photos?.slice(0, 5).map((photo) => photo.getUrl({ maxWidth: 400, maxHeight: 400 })) || [],
-            isOpen: place.opening_hours?.isOpen?.(),
-          }))
-
-          console.log("[v0] Processed places:", places.length)
-          setSearchResults(places)
-        } else {
-          console.log("[v0] No results found or search failed")
-          setSearchResults([])
-        }
-        setIsLoading(false)
-      })
+      if (data.places) {
+        setSearchResults(data.places)
+      } else {
+        setSearchResults([])
+      }
     } catch (error) {
       console.error("[v0] Error searching places:", error)
+      setSearchResults([])
+    } finally {
       setIsLoading(false)
     }
   }
@@ -201,8 +152,6 @@ export function PlaceSearch({
         notes: manualNotes.trim() || undefined,
         saved: true,
       }
-
-      console.log("[v0] Adding manual place:", manualPlace)
 
       if (onAddPlaceToTrip) {
         onAddPlaceToTrip("default-trip-id", manualPlace)
@@ -319,9 +268,6 @@ export function PlaceSearch({
                           variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation()
-                            console.log("[v0] Plus button clicked for place:", place.name)
-                            console.log("[v0] Available trips:", trips.length)
-                            console.log("[v0] Setting tripSelectionPlace to:", place)
                             setTripSelectionPlace(place)
                           }}
                         >
@@ -332,7 +278,7 @@ export function PlaceSearch({
                   </div>
 
                   <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <MapPin className="size-4 flex-shrink-0 mt-0.5" />
+                    <MapPin className="mt-0.5 size-4 shrink-0" />
                     <span>{place.address}</span>
                   </div>
 
@@ -373,7 +319,7 @@ export function PlaceSearch({
           <Alert>
             <Info className="size-4" />
             <AlertDescription>
-              Can't find your place on Google Maps? Add it manually with the address you have.
+              {"Can't find your place on Google Maps? Add it manually with the address you have."}
             </AlertDescription>
           </Alert>
 
@@ -444,12 +390,8 @@ export function PlaceSearch({
                 variant="outline"
                 className="w-full justify-start bg-transparent"
                 onClick={() => {
-                  console.log("[v0] Trip selected:", trip.name, trip.id)
-                  console.log("[v0] Adding place:", tripSelectionPlace?.name)
-                  console.log("[v0] onAddPlaceToTrip function exists:", !!onAddPlaceToTrip)
                   if (tripSelectionPlace && onAddPlaceToTrip) {
                     onAddPlaceToTrip(trip.id, tripSelectionPlace)
-                    console.log("[v0] Place added to trip, closing dialog")
                     setTripSelectionPlace(null)
                   }
                 }}

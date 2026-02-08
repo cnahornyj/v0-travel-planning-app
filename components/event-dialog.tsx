@@ -176,6 +176,13 @@ export function EventDialog({
 
   const selectedPlace = places.find((p) => p.id === selectedPlaceId)
 
+  // When changing place, use its estimatedDuration as default if available
+  useEffect(() => {
+    if (selectedPlace?.estimatedDuration && !editingEvent) {
+      setDuration(selectedPlace.estimatedDuration.toString())
+    }
+  }, [selectedPlaceId, selectedPlace, editingEvent])
+
   const openingHoursInfo = useMemo(() => {
     if (!selectedPlaceId || !date || !startTime) return null
     return getOpeningHoursInfo(
@@ -310,6 +317,15 @@ export function EventDialog({
                       {opt.label}
                     </SelectItem>
                   ))}
+                  {selectedPlace?.estimatedDuration &&
+                    !DURATION_OPTIONS.some((o) => o.value === selectedPlace.estimatedDuration!.toString()) && (
+                      <SelectItem value={selectedPlace.estimatedDuration.toString()}>
+                        {selectedPlace.estimatedDuration >= 60
+                          ? `${Math.floor(selectedPlace.estimatedDuration / 60)}h${selectedPlace.estimatedDuration % 60 > 0 ? `${selectedPlace.estimatedDuration % 60}m` : ""}`
+                          : `${selectedPlace.estimatedDuration}min`}{" "}
+                        (estimation)
+                      </SelectItem>
+                    )}
                 </SelectContent>
               </Select>
             </div>

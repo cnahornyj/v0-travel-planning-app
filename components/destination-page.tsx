@@ -7,12 +7,13 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro } from "lucide-react"
 import type { Trip, Place, ScheduledEvent } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ export function DestinationPage() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState<string | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [placeToDelete, setPlaceToDelete] = useState<Place | null>(null)
@@ -133,6 +135,39 @@ export function DestinationPage() {
 
     if (selectedPlace?.id === placeId) {
       setSelectedPlace((prev) => (prev ? { ...prev, website } : null))
+    }
+  }
+
+  const handleUpdatePlaceName = async (placeId: string, name: string) => {
+    if (!trip || !name.trim()) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, name: name.trim() } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, name: name.trim() } : null))
+    }
+  }
+
+  const handleUpdatePrice = async (placeId: string, price: string | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, price } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, price } : null))
+    }
+  }
+
+  const handleUpdateEstimatedDuration = async (placeId: string, estimatedDuration: number | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, estimatedDuration } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, estimatedDuration } : null))
     }
   }
 
@@ -387,7 +422,34 @@ export function DestinationPage() {
 
                       <div className="ml-4 flex min-w-0 flex-1 flex-col">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="truncate text-base font-bold">{place.name}</h3>
+                          {editingName === place.id ? (
+                            <Input
+                              defaultValue={place.name}
+                              autoFocus
+                              className="h-7 text-base font-bold"
+                              onBlur={(e) => {
+                                if (e.target.value.trim()) {
+                                  handleUpdatePlaceName(place.id, e.target.value)
+                                }
+                                setEditingName(null)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.currentTarget.blur()
+                                } else if (e.key === "Escape") {
+                                  setEditingName(null)
+                                }
+                              }}
+                            />
+                          ) : (
+                            <h3
+                              className="cursor-pointer truncate text-base font-bold hover:text-primary"
+                              onClick={() => setEditingName(place.id)}
+                              title="Cliquer pour modifier le nom"
+                            >
+                              {place.name}
+                            </h3>
+                          )}
                           <div className="flex shrink-0 items-center gap-1">
                             <Button
                               variant="ghost"
@@ -417,12 +479,42 @@ export function DestinationPage() {
                           </div>
                         </div>
 
-                        {place.rating && (
-                          <div className="mt-1 flex items-center gap-1">
-                            <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium">{place.rating}</span>
-                          </div>
-                        )}
+                        <div className="mt-1 flex items-center gap-2">
+                          {place.rating && (
+                            <div className="flex items-center gap-1">
+                              <Star className="size-3.5 fill-yellow-400 text-yellow-400" />
+                              <span className="text-sm font-medium">{place.rating}</span>
+                            </div>
+                          )}
+                          <Badge
+                            variant="outline"
+                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
+                            onClick={() => {
+                              setSelectedPlace(place)
+                              setShowPlaceDetails(true)
+                            }}
+                            title="Durée estimée de visite"
+                          >
+                            <Clock className="size-2.5" />
+                            {place.estimatedDuration
+                              ? place.estimatedDuration >= 60
+                                ? `${Math.floor(place.estimatedDuration / 60)}h${place.estimatedDuration % 60 > 0 ? `${place.estimatedDuration % 60}m` : ""}`
+                                : `${place.estimatedDuration}min`
+                              : "Non défini"}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
+                            onClick={() => {
+                              setSelectedPlace(place)
+                              setShowPlaceDetails(true)
+                            }}
+                            title="Prix"
+                          >
+                            <Euro className="size-2.5" />
+                            {place.price || "Non défini"}
+                          </Badge>
+                        </div>
 
                         <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
                           <MapPin className="mt-0.5 size-3 shrink-0" />
@@ -514,6 +606,9 @@ export function DestinationPage() {
             onUpdateWebsite={handleUpdatePlaceWebsite}
             onUpdateOpeningHours={handleUpdateOpeningHours}
             onUpdateTags={handleUpdateTags}
+            onUpdateName={handleUpdatePlaceName}
+            onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
+            onUpdatePrice={handleUpdatePrice}
           />
         )}
       </div>
