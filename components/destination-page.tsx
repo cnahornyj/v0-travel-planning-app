@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Ticket, ExternalLink } from "lucide-react"
 import type { Trip, Place, ScheduledEvent } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
@@ -35,6 +35,7 @@ export function DestinationPage() {
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
   const [editingName, setEditingName] = useState<string | null>(null)
+  const [editingTicketUrl, setEditingTicketUrl] = useState<string | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showFilters, setShowFilters] = useState(false)
   const [placeToDelete, setPlaceToDelete] = useState<Place | null>(null)
@@ -158,6 +159,18 @@ export function DestinationPage() {
     if (selectedPlace?.id === placeId) {
       setSelectedPlace((prev) => (prev ? { ...prev, price } : null))
     }
+  }
+
+  const handleUpdateTicketUrl = async (placeId: string, ticketUrl: string) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, ticketUrl: ticketUrl.trim() || undefined } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, ticketUrl: ticketUrl.trim() || undefined } : null))
+    }
+    setEditingTicketUrl(null)
   }
 
   const handleUpdateEstimatedDuration = async (placeId: string, estimatedDuration: number | undefined) => {
@@ -410,7 +423,7 @@ export function DestinationPage() {
                   {filteredPlaces.map((place) => (
                     <Card
                       key={place.id}
-                      className="group flex h-44 flex-row gap-0 overflow-hidden p-3 py-3 transition-shadow hover:shadow-lg"
+                      className="group flex h-52 flex-row gap-0 overflow-hidden p-3 py-3 transition-shadow hover:shadow-lg"
                     >
                       <div className="relative h-full w-36 shrink-0 overflow-hidden rounded-xl">
                         <img
@@ -521,6 +534,52 @@ export function DestinationPage() {
                           <span className="line-clamp-1">{place.address}</span>
                         </div>
 
+                        {editingTicketUrl === place.id ? (
+                          <div className="mt-1 flex items-center gap-1">
+                            <Ticket className="size-3 shrink-0 text-muted-foreground" />
+                            <Input
+                              defaultValue={place.ticketUrl || ""}
+                              placeholder="https://..."
+                              autoFocus
+                              className="h-6 flex-1 text-xs"
+                              onBlur={(e) => handleUpdateTicketUrl(place.id, e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.currentTarget.blur()
+                                } else if (e.key === "Escape") {
+                                  setEditingTicketUrl(null)
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="mt-1 flex items-center gap-1 text-xs">
+                            <Ticket className="size-3 shrink-0 text-muted-foreground" />
+                            {place.ticketUrl ? (
+                              <a
+                                href={place.ticketUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 truncate text-primary hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="truncate">{place.ticketUrl.replace(/^https?:\/\/(www\.)?/, "")}</span>
+                                <ExternalLink className="size-2.5 shrink-0" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">Aucun lien</span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingTicketUrl(place.id)}
+                              className="size-5 shrink-0"
+                            >
+                              <Edit className="size-3" />
+                            </Button>
+                          </div>
+                        )}
+
                         {editingNotes === place.id ? (
                           <Textarea
                             defaultValue={place.notes || ""}
@@ -609,6 +668,7 @@ export function DestinationPage() {
             onUpdateName={handleUpdatePlaceName}
             onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
             onUpdatePrice={handleUpdatePrice}
+            onUpdateTicketUrl={handleUpdateTicketUrl}
           />
         )}
       </div>
