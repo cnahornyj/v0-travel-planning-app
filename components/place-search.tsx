@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -31,6 +31,30 @@ const PLACE_TYPES = [
   { id: "shopping_mall", label: "Shopping", icon: "🛍️" },
 ]
 
+// Helper to get the PlacesService (client-side, requires google maps JS loaded)
+function getPlacesService(): any | null {
+  if (typeof window === "undefined" || !window.google?.maps?.places) return null
+  const div = document.createElement("div")
+  return new window.google.maps.places.PlacesService(div)
+}
+
+// Convert a Google PlaceResult to our Place type
+function placeResultToPlace(result: any): Place {
+  return {
+    id: result.place_id || `place-${Math.random().toString(36).slice(2)}`,
+    name: result.name || "Unknown Place",
+    address: result.formatted_address || result.vicinity || "Address not available",
+    lat: result.geometry?.location?.lat() || 0,
+    lng: result.geometry?.location?.lng() || 0,
+    type: result.types?.[0],
+    rating: result.rating,
+    photos: result.photos
+      ? result.photos.slice(0, 5).map((photo: any) => photo.getUrl({ maxWidth: 400 }))
+      : [],
+    isOpen: result.opening_hours?.isOpen?.(),
+  }
+}
+
 export function PlaceSearch({
   onPlaceSelect,
   onLocationChange,
@@ -57,15 +81,47 @@ export function PlaceSearch({
   const locationInputRef = useRef<HTMLInputElement>(null)
   const [tripSelectionPlace, setTripSelectionPlace] = useState<Place | null>(null)
 
+  // Client-side text search using the Google Maps JS SDK
+  const clientTextSearch = useCallback(
+    (query: string, location?: { lat: number; lng: number }): Promise<Place[]> => {
+      return new Promise((resolve) => {
+        const service = getPlacesService()
+        if (!service) {
+          console.error("[v0] Google Maps PlacesService not available")
+          resolve([])
+          return
+        }
+
+        const request: any = {
+          query,
+          ...(location && location.lat !== 0 && location.lng !== 0
+            ? {
+                location: new window.google.maps.LatLng(location.lat, location.lng),
+                radius: 50000,
+              }
+            : {}),
+        }
+
+        service.textSearch(request, (results: any[], status: string) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+            resolve(results.slice(0, 10).map((r) => placeResultToPlace(r)))
+          } else {
+            resolve([])
+          }
+        })
+      })
+    },
+    []
+  )
+
   const searchLocation = async (query: string) => {
     if (!query.trim()) return
 
     try {
-      const res = await fetch(`/api/places/search?query=${encodeURIComponent(query + " city")}`)
-      const data = await res.json()
+      const results = await clientTextSearch(query + " city")
 
-      if (data.places && data.places.length > 0) {
-        const place = data.places[0]
+      if (results.length > 0) {
+        const place = results[0]
         const newLocation = {
           lat: place.lat,
           lng: place.lng,
@@ -90,32 +146,20 @@ export function PlaceSearch({
     setIsLoading(true)
 
     try {
-      let searchQuery = query
-      if (!searchQuery) {
+      let finalQuery = query
+      if (!finalQuery) {
         if (type) {
           const typeLabel = PLACE_TYPES.find((t) => t.id === type)?.label || type
-          searchQuery = `${typeLabel} in ${location.name}`
+          finalQuery = `${typeLabel} in ${location.name}`
         } else {
-          searchQuery = `popular places in ${location.name}`
+          finalQuery = `popular places in ${location.name}`
         }
       } else if (location.name && location.name !== "New York, NY") {
-        searchQuery = `${query} in ${location.name}`
+        finalQuery = `${query} in ${location.name}`
       }
 
-      const params = new URLSearchParams({ query: searchQuery })
-      if (location.lat !== 0 && location.lng !== 0) {
-        params.set("lat", location.lat.toString())
-        params.set("lng", location.lng.toString())
-      }
-
-      const res = await fetch(`/api/places/search?${params.toString()}`)
-      const data = await res.json()
-
-      if (data.places) {
-        setSearchResults(data.places)
-      } else {
-        setSearchResults([])
-      }
+      const results = await clientTextSearch(finalQuery, { lat: location.lat, lng: location.lng })
+      setSearchResults(results)
     } catch (error) {
       console.error("[v0] Error searching places:", error)
       setSearchResults([])

@@ -4,7 +4,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const placeId = searchParams.get("placeId")
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
   if (!apiKey) {
     return NextResponse.json({ error: "Google Maps API key not configured" }, { status: 500 })
