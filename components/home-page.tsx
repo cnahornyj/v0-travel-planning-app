@@ -99,14 +99,14 @@ export function HomePage() {
               className="group cursor-pointer overflow-hidden border-0 p-0 shadow-none transition-all hover:shadow-lg"
               onClick={() => router.push(`/destinations/${trip.id}`)}
             >
-              <div className="relative aspect-video overflow-hidden rounded-md">
+              <div className="relative aspect-square overflow-hidden rounded-sm">
                 <img
                   src={getFirstImage(trip) || "/placeholder.svg"}
                   alt={trip.name}
                   className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 {/* Destination name with blurred background - top left */}
-                <div className="absolute top-3 left-3 rounded-md bg-white/70 px-3 py-1.5 backdrop-blur-md">
+                <div className="absolute top-3 left-3 rounded-sm bg-white/70 px-3 py-1.5 backdrop-blur-md">
                   <h3 className="text-sm font-semibold text-gray-900">{trip.name}</h3>
                 </div>
                 {/* Discovery icon - top right */}
@@ -117,7 +117,7 @@ export function HomePage() {
                     e.stopPropagation()
                     router.push(`/destinations/${trip.id}`)
                   }}
-                  className="absolute top-3 right-3 size-8 rounded-md bg-white/70 backdrop-blur-md hover:bg-white/90"
+                  className="absolute top-3 right-3 size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-white/90"
                 >
                   <Info className="size-4 text-gray-900" />
                 </Button>
