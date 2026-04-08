@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Info, Plus } from "lucide-react"
+import { TravelSpinner } from "@/components/ui/travel-spinner"
+import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 import type { Trip } from "@/components/travel-planner"
 
 export function HomePage() {
@@ -70,19 +72,16 @@ export function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-lg text-muted-foreground">Loading destinations...</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <TravelSpinner size="lg" message="Discovering destinations..." />
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card p-8">
-        <h1 className="text-center text-4xl font-bold tracking-tight">verydisco</h1>
+      <header className="bg-primary px-8 py-6 shadow-md shadow-black/15">
+        <VeryDiscoLogo size="lg" />
       </header>
 
       <main className="mx-auto max-w-7xl p-8">

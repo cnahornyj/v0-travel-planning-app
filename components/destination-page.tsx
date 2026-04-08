@@ -22,6 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { TravelSpinner } from "@/components/ui/travel-spinner"
+import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 
 export function DestinationPage() {
   const params = useParams()
@@ -290,11 +292,8 @@ export function DestinationPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-lg text-muted-foreground">Loading destination...</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <TravelSpinner size="lg" message="Charting your journey..." />
       </div>
     )
   }
@@ -319,20 +318,23 @@ export function DestinationPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between border-b p-4">
+        <header className="flex items-center justify-between bg-primary p-4 shadow-md shadow-black/15">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="text-white hover:bg-white/20 hover:text-white">
             <ArrowLeft className="size-5" />
           </Button>
+          <VeryDiscoLogo size="sm" />
+          <div className="h-6 w-px bg-white/30" />
           <div>
-            <h1 className="text-2xl font-bold">{trip.name}</h1>
-            {trip.description && <p className="text-sm text-muted-foreground">{trip.description}</p>}
+            <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
+            {trip.description && <p className="text-sm text-white/80">{trip.description}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={showScheduleSidebar ? "default" : "outline"}
+            variant="outline"
             onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+            className={showScheduleSidebar ? "border-white bg-white text-primary" : "border-white/50 bg-transparent text-white hover:bg-white/20"}
           >
             <Calendar className="mr-2 size-4" />
             Schedule
@@ -342,7 +344,10 @@ export function DestinationPage() {
               </Badge>
             )}
           </Button>
-          <Button onClick={() => setShowPlaceSearch(!showPlaceSearch)}>
+          <Button 
+            onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+            className="bg-white text-primary hover:bg-white/90"
+          >
             {showPlaceSearch ? "Close Search" : "Add Place"}
           </Button>
         </div>
