@@ -94,23 +94,32 @@ export function HomePage() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
-            <Card key={trip.id} className="group overflow-hidden transition-shadow hover:shadow-lg">
-              <div className="relative aspect-video overflow-hidden">
+            <Card
+              key={trip.id}
+              className="group cursor-pointer overflow-hidden border-0 p-0 shadow-none transition-all hover:shadow-lg"
+              onClick={() => router.push(`/destinations/${trip.id}`)}
+            >
+              <div className="relative aspect-video overflow-hidden rounded-xl">
                 <img
                   src={getFirstImage(trip) || "/placeholder.svg"}
                   alt={trip.name}
-                  className="size-full object-cover"
+                  className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-              </div>
-              <div className="flex items-center justify-between p-4">
-                <h3 className="text-lg font-semibold">{trip.name}</h3>
+                {/* Destination name with blurred background - top right */}
+                <div className="absolute top-3 right-3 rounded-lg bg-white/70 px-3 py-1.5 backdrop-blur-md">
+                  <h3 className="text-sm font-semibold text-gray-900">{trip.name}</h3>
+                </div>
+                {/* Discovery icon - top left */}
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => router.push(`/destinations/${trip.id}`)}
-                  className="shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push(`/destinations/${trip.id}`)
+                  }}
+                  className="absolute top-3 left-3 size-8 rounded-full bg-white/70 backdrop-blur-md hover:bg-white/90"
                 >
-                  <Info className="size-5" />
+                  <Info className="size-4 text-gray-900" />
                 </Button>
               </div>
             </Card>
