@@ -27,13 +27,12 @@ export function VeryDiscoLogo({ size = "md", className }: VeryDiscoLogoProps) {
         viewBox="0 0 24 24"
         className={cn("self-center", globeContainerSizes[size])}
         fill="none"
-        stroke="#5F5F5F"
         strokeWidth="1.5"
       >
-        {/* Globe circle with primary background */}
-        <circle cx="12" cy="12" r="11" className="fill-primary stroke-primary" />
+        {/* Globe circle filled with grey */}
+        <circle cx="12" cy="12" r="11" fill="#5F5F5F" stroke="none" />
         {/* Vertical meridian */}
-        <ellipse cx="12" cy="12" rx="4" ry="9" stroke="white" />
+        <ellipse cx="12" cy="12" rx="4" ry="9" stroke="white" fill="none" />
         {/* Horizontal lines */}
         <path d="M3.5 9h17" stroke="white" />
         <path d="M3.5 15h17" stroke="white" />
