@@ -15,9 +15,9 @@ export function VeryDiscoLogo({ size = "md", className }: VeryDiscoLogoProps) {
   }
 
   const globeContainerSizes = {
-    sm: "w-[1em] h-[1em]",
-    md: "w-[1em] h-[1em]",
-    lg: "w-[1em] h-[1em]",
+    sm: "w-[0.75em] h-[0.75em]",
+    md: "w-[0.75em] h-[0.75em]",
+    lg: "w-[0.75em] h-[0.75em]",
   }
 
   return (
