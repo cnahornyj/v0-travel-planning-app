@@ -99,7 +99,7 @@ export function HomePage() {
               className="group cursor-pointer overflow-hidden border-0 p-0 shadow-none transition-all hover:shadow-lg"
               onClick={() => router.push(`/destinations/${trip.id}`)}
             >
-              <div className="relative aspect-square overflow-hidden rounded-sm">
+              <div className="relative aspect-video overflow-hidden rounded-sm">
                 <img
                   src={getFirstImage(trip) || "/placeholder.svg"}
                   alt={trip.name}
