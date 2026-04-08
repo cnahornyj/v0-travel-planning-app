@@ -57,26 +57,95 @@ export function TravelSpinner({ size = "md", message, className }: TravelSpinner
         <div className="absolute inset-3 animate-pulse rounded-full border-2 border-primary/30" 
              style={{ animationDuration: "2s" }} />
 
-        {/* Center globe */}
+        {/* Center disco globe */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className={cn("relative", globeSizes[size])}>
             <svg
-              viewBox="0 0 24 24"
-              className="h-full w-full animate-pulse text-primary"
-              style={{ animationDuration: "3s" }}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.2"
+              viewBox="0 0 50 50"
+              className="h-full w-full animate-spin text-primary"
+              style={{ animationDuration: "4s" }}
             >
-              {/* Globe outer circle */}
-              <circle cx="12" cy="12" r="10" className="fill-primary/10" />
-              {/* Vertical meridian */}
-              <ellipse cx="12" cy="12" rx="4" ry="10" />
-              {/* Horizontal equator */}
-              <ellipse cx="12" cy="12" rx="10" ry="4" />
-              {/* Latitude lines */}
-              <path d="M4 8.5h16" />
-              <path d="M4 15.5h16" />
+              <defs>
+                {/* Gradient for shimmer effect */}
+                <linearGradient id="shimmer1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.7" />
+                </linearGradient>
+                <linearGradient id="shimmer2" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.5" />
+                  <stop offset="50%" stopColor="currentColor" stopOpacity="1" />
+                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.4" />
+                </linearGradient>
+                {/* Clip path for globe shape */}
+                <clipPath id="globeClip">
+                  <circle cx="25" cy="25" r="20" />
+                </clipPath>
+              </defs>
+              
+              {/* Globe base */}
+              <circle cx="25" cy="25" r="20" fill="currentColor" opacity="0.15" />
+              
+              {/* Disco facets - horizontal bands */}
+              <g clipPath="url(#globeClip)">
+                {/* Row 1 - top */}
+                <rect x="5" y="6" width="8" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0s", animationDuration: "0.8s" }} />
+                <rect x="14" y="6" width="8" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.2s", animationDuration: "0.6s" }} />
+                <rect x="23" y="6" width="8" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.4s", animationDuration: "0.9s" }} />
+                <rect x="32" y="6" width="8" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.1s", animationDuration: "0.7s" }} />
+                
+                {/* Row 2 */}
+                <rect x="3" y="12" width="7" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.3s", animationDuration: "0.5s" }} />
+                <rect x="11" y="12" width="7" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.5s", animationDuration: "0.8s" }} />
+                <rect x="19" y="12" width="7" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.1s", animationDuration: "0.6s" }} />
+                <rect x="27" y="12" width="7" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.4s", animationDuration: "0.9s" }} />
+                <rect x="35" y="12" width="7" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.2s", animationDuration: "0.7s" }} />
+                
+                {/* Row 3 - middle top */}
+                <rect x="5" y="18" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.6s", animationDuration: "0.6s" }} />
+                <rect x="12" y="18" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0s", animationDuration: "0.8s" }} />
+                <rect x="19" y="18" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.3s", animationDuration: "0.5s" }} />
+                <rect x="26" y="18" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.5s", animationDuration: "0.9s" }} />
+                <rect x="33" y="18" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.2s", animationDuration: "0.7s" }} />
+                
+                {/* Row 4 - equator */}
+                <rect x="5" y="24" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.1s", animationDuration: "0.7s" }} />
+                <rect x="12" y="24" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.4s", animationDuration: "0.6s" }} />
+                <rect x="19" y="24" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.6s", animationDuration: "0.8s" }} />
+                <rect x="26" y="24" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0s", animationDuration: "0.5s" }} />
+                <rect x="33" y="24" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.3s", animationDuration: "0.9s" }} />
+                
+                {/* Row 5 - middle bottom */}
+                <rect x="5" y="30" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.2s", animationDuration: "0.8s" }} />
+                <rect x="12" y="30" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.5s", animationDuration: "0.6s" }} />
+                <rect x="19" y="30" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.1s", animationDuration: "0.7s" }} />
+                <rect x="26" y="30" width="6" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.4s", animationDuration: "0.9s" }} />
+                <rect x="33" y="30" width="6" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.6s", animationDuration: "0.5s" }} />
+                
+                {/* Row 6 */}
+                <rect x="3" y="36" width="7" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.4s", animationDuration: "0.6s" }} />
+                <rect x="11" y="36" width="7" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.1s", animationDuration: "0.8s" }} />
+                <rect x="19" y="36" width="7" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.3s", animationDuration: "0.5s" }} />
+                <rect x="27" y="36" width="7" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.6s", animationDuration: "0.9s" }} />
+                <rect x="35" y="36" width="7" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0s", animationDuration: "0.7s" }} />
+                
+                {/* Row 7 - bottom */}
+                <rect x="5" y="42" width="8" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.5s", animationDuration: "0.7s" }} />
+                <rect x="14" y="42" width="8" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.2s", animationDuration: "0.6s" }} />
+                <rect x="23" y="42" width="8" height="5" fill="url(#shimmer2)" className="animate-pulse" style={{ animationDelay: "0.4s", animationDuration: "0.8s" }} />
+                <rect x="32" y="42" width="8" height="5" fill="url(#shimmer1)" className="animate-pulse" style={{ animationDelay: "0.1s", animationDuration: "0.9s" }} />
+              </g>
+              
+              {/* Globe outline and meridians for geography feel */}
+              <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+              <ellipse cx="25" cy="25" rx="8" ry="20" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
+              <ellipse cx="25" cy="25" rx="20" ry="8" fill="none" stroke="currentColor" strokeWidth="0.5" opacity="0.3" />
+              
+              {/* Sparkle highlights */}
+              <circle cx="15" cy="15" r="1.5" fill="white" opacity="0.9" className="animate-ping" style={{ animationDuration: "1.5s" }} />
+              <circle cx="32" cy="20" r="1" fill="white" opacity="0.7" className="animate-ping" style={{ animationDuration: "2s", animationDelay: "0.5s" }} />
+              <circle cx="20" cy="32" r="1.2" fill="white" opacity="0.8" className="animate-ping" style={{ animationDuration: "1.8s", animationDelay: "0.3s" }} />
+              <circle cx="35" cy="30" r="0.8" fill="white" opacity="0.6" className="animate-ping" style={{ animationDuration: "2.2s", animationDelay: "0.7s" }} />
             </svg>
             
             {/* Orbiting dot around the globe */}
