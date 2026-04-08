@@ -15,9 +15,9 @@ export function VeryDiscoLogo({ size = "md", className }: VeryDiscoLogoProps) {
   }
 
   const globeContainerSizes = {
-    sm: "w-[1.4em] h-[1.4em] ml-[-0.1em]",
-    md: "w-[1.4em] h-[1.4em] ml-[-0.1em]",
-    lg: "w-[1.4em] h-[1.4em] ml-[-0.1em]",
+    sm: "w-[1em] h-[1em]",
+    md: "w-[1em] h-[1em]",
+    lg: "w-[1em] h-[1em]",
   }
 
   return (
@@ -27,7 +27,7 @@ export function VeryDiscoLogo({ size = "md", className }: VeryDiscoLogoProps) {
         {/* Simplified globe icon sized to match "o" */}
         <svg
           viewBox="0 0 24 24"
-          className="w-[0.65em] h-[0.65em] text-white"
+          className="w-[0.75em] h-[0.75em] text-white"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
