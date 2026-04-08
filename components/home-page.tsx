@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Info, Plus } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
+import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 import type { Trip } from "@/components/travel-planner"
 
 export function HomePage() {
@@ -79,8 +80,8 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card p-8">
-        <h1 className="text-center text-4xl font-bold tracking-tight">verydisco</h1>
+      <header className="border-b bg-card px-8 py-6">
+        <VeryDiscoLogo size="lg" />
       </header>
 
       <main className="mx-auto max-w-7xl p-8">

@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
+import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 
 export function DestinationPage() {
   const params = useParams()
@@ -322,6 +323,8 @@ export function DestinationPage() {
           <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
             <ArrowLeft className="size-5" />
           </Button>
+          <VeryDiscoLogo size="sm" />
+          <div className="h-6 w-px bg-border" />
           <div>
             <h1 className="text-2xl font-bold">{trip.name}</h1>
             {trip.description && <p className="text-sm text-muted-foreground">{trip.description}</p>}
