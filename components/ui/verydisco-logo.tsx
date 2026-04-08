@@ -21,23 +21,22 @@ export function VeryDiscoLogo({ size = "md", className }: VeryDiscoLogoProps) {
   }
 
   return (
-    <span className={cn("inline-flex items-baseline font-bold tracking-tight", sizeClasses[size], className)}>
-      <span className="text-foreground">verydisc</span>
+    <span className={cn("inline-flex items-baseline font-bold tracking-tight text-white", sizeClasses[size], className)}>
+      <span>verydisc</span>
       <svg
         viewBox="0 0 24 24"
         className={cn("self-center", globeContainerSizes[size])}
         fill="none"
         strokeWidth="1.5"
+        stroke="currentColor"
       >
-        {/* Globe circle filled with grey */}
-        <circle cx="12" cy="12" r="11" fill="#5F5F5F" stroke="none" />
         {/* Vertical meridian */}
-        <ellipse cx="12" cy="12" rx="4" ry="9" stroke="white" fill="none" />
+        <ellipse cx="12" cy="12" rx="4" ry="9" />
         {/* Horizontal lines */}
-        <path d="M3.5 9h17" stroke="white" />
-        <path d="M3.5 15h17" stroke="white" />
+        <path d="M3.5 9h17" />
+        <path d="M3.5 15h17" />
         {/* Globe outline */}
-        <circle cx="12" cy="12" r="9" fill="none" stroke="white" />
+        <circle cx="12" cy="12" r="9" />
       </svg>
     </span>
   )

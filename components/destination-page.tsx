@@ -318,22 +318,23 @@ export function DestinationPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between border-b p-4">
+        <header className="flex items-center justify-between bg-primary p-4">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="text-white hover:bg-white/20 hover:text-white">
             <ArrowLeft className="size-5" />
           </Button>
           <VeryDiscoLogo size="sm" />
-          <div className="h-6 w-px bg-border" />
+          <div className="h-6 w-px bg-white/30" />
           <div>
-            <h1 className="text-2xl font-bold">{trip.name}</h1>
-            {trip.description && <p className="text-sm text-muted-foreground">{trip.description}</p>}
+            <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
+            {trip.description && <p className="text-sm text-white/80">{trip.description}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={showScheduleSidebar ? "default" : "outline"}
+            variant="outline"
             onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+            className={showScheduleSidebar ? "border-white bg-white text-primary" : "border-white/50 bg-transparent text-white hover:bg-white/20"}
           >
             <Calendar className="mr-2 size-4" />
             Schedule
@@ -343,7 +344,10 @@ export function DestinationPage() {
               </Badge>
             )}
           </Button>
-          <Button onClick={() => setShowPlaceSearch(!showPlaceSearch)}>
+          <Button 
+            onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+            className="bg-white text-primary hover:bg-white/90"
+          >
             {showPlaceSearch ? "Close Search" : "Add Place"}
           </Button>
         </div>

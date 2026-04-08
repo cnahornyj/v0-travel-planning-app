@@ -80,7 +80,7 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card px-8 py-6">
+      <header className="bg-primary px-8 py-6">
         <VeryDiscoLogo size="lg" />
       </header>
 
