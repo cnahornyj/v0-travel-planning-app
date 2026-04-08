@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/dialog"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
-import { CountryFlag } from "@/components/ui/country-flag"
 
 export function DestinationPage() {
   const params = useParams()
@@ -327,16 +326,7 @@ export function DestinationPage() {
           <VeryDiscoLogo size="sm" />
           <div className="h-6 w-px bg-white/30" />
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
-              {trip.places.length > 0 && (
-                <CountryFlag 
-                  lat={trip.places[0].lat} 
-                  lng={trip.places[0].lng} 
-                  className="text-2xl"
-                />
-              )}
-              {trip.name}
-            </h1>
+            <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
             {trip.description && <p className="text-sm text-white/80">{trip.description}</p>}
           </div>
         </div>
