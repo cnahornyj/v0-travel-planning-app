@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Info, Plus } from "lucide-react"
+import { TravelSpinner } from "@/components/ui/travel-spinner"
 import type { Trip } from "@/components/travel-planner"
 
 export function HomePage() {
@@ -70,11 +71,8 @@ export function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-lg text-muted-foreground">Loading destinations...</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <TravelSpinner size="lg" message="Discovering destinations..." />
       </div>
     )
   }

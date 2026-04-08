@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Search, MapPin, Star, Plus, Globe, Calendar, PlusCircle, Info } from "lucide-react"
+import { TravelSpinner } from "@/components/ui/travel-spinner"
 import type { Place, Trip } from "./travel-planner"
 
 interface PlaceSearchProps {
@@ -283,7 +284,7 @@ export function PlaceSearch({
 
           {isLoading && (
             <div className="flex items-center justify-center py-8">
-              <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <TravelSpinner size="sm" message="Searching..." />
             </div>
           )}
 
@@ -406,7 +407,19 @@ export function PlaceSearch({
             >
               {isManualLoading ? (
                 <>
-                  <div className="mr-2 size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="mr-2 size-4 animate-spin"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="3" className="fill-current/20" />
+                    <path d="M12 2L12 6" strokeLinecap="round" />
+                    <path d="M12 18L12 22" strokeLinecap="round" />
+                    <path d="M2 12L6 12" strokeLinecap="round" />
+                    <path d="M18 12L22 12" strokeLinecap="round" />
+                  </svg>
                   Adding Place...
                 </>
               ) : (

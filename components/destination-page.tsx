@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { TravelSpinner } from "@/components/ui/travel-spinner"
 
 export function DestinationPage() {
   const params = useParams()
@@ -290,11 +291,8 @@ export function DestinationPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 inline-block size-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-lg text-muted-foreground">Loading destination...</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <TravelSpinner size="lg" message="Charting your journey..." />
       </div>
     )
   }
