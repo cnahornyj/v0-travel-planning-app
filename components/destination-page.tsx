@@ -318,7 +318,7 @@ export function DestinationPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between bg-primary p-4">
+        <header className="flex items-center justify-between bg-primary p-4 shadow-md shadow-black/15">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="text-white hover:bg-white/20 hover:text-white">
             <ArrowLeft className="size-5" />
