@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Info, Plus, Trash2 } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
+import { AnimatedTagline } from "@/components/ui/animated-tagline"
 import type { Trip } from "@/components/travel-planner"
 
 export function HomePage() {
@@ -117,7 +118,7 @@ export function HomePage() {
             <Plus className="mr-2 size-5" />
             Create a destination
           </Button>
-          <p className="text-sm text-muted-foreground italic">Disco-ver your next adventure</p>
+          <AnimatedTagline />
         </div>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
