@@ -67,6 +67,8 @@ export function PlaceSearch({
   const [manualName, setManualName] = useState("")
   const [manualAddress, setManualAddress] = useState("")
   const [manualNotes, setManualNotes] = useState("")
+  const [manualLat, setManualLat] = useState("")
+  const [manualLng, setManualLng] = useState("")
   const [isManualLoading, setIsManualLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [locationQuery, setLocationQuery] = useState("")
@@ -188,12 +190,16 @@ export function PlaceSearch({
 
     setIsManualLoading(true)
     try {
+      // Use manually entered coordinates if provided, otherwise fall back to current location
+      const lat = manualLat.trim() ? parseFloat(manualLat.trim()) : (currentLocation.lat || 0)
+      const lng = manualLng.trim() ? parseFloat(manualLng.trim()) : (currentLocation.lng || 0)
+
       const manualPlace: Place = {
         id: `manual-${Date.now()}`,
         name: manualName.trim(),
         address: manualAddress.trim(),
-        lat: currentLocation.lat || 0,
-        lng: currentLocation.lng || 0,
+        lat: isNaN(lat) ? 0 : lat,
+        lng: isNaN(lng) ? 0 : lng,
         notes: manualNotes.trim() || undefined,
         saved: true,
       }
@@ -205,6 +211,13 @@ export function PlaceSearch({
       setManualName("")
       setManualAddress("")
       setManualNotes("")
+      setManualLat("")
+      setManualLng("")
+
+      // Center the map on the new place if coordinates were provided
+      if (manualLat.trim() && manualLng.trim() && !isNaN(lat) && !isNaN(lng)) {
+        onLocationChange?.({ lat, lng, name: manualPlace.name })
+      }
 
       onPlaceSelect(manualPlace)
     } catch (error) {
@@ -387,6 +400,31 @@ export function PlaceSearch({
                 value={manualAddress}
                 onChange={(e) => setManualAddress(e.target.value)}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="manual-lat">Latitude (optional)</Label>
+                <Input
+                  id="manual-lat"
+                  type="number"
+                  step="any"
+                  placeholder="e.g., 35.6895"
+                  value={manualLat}
+                  onChange={(e) => setManualLat(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="manual-lng">Longitude (optional)</Label>
+                <Input
+                  id="manual-lng"
+                  type="number"
+                  step="any"
+                  placeholder="e.g., 139.6917"
+                  value={manualLng}
+                  onChange={(e) => setManualLng(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
