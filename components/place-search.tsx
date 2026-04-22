@@ -121,9 +121,19 @@ export function PlaceSearch({
 
   // Auto-initialize location from destination name
   useEffect(() => {
-    const initializeLocation = async () => {
-      if (!destinationName || isLocationInitialized || isInitializing) return
-      
+    if (!destinationName || isLocationInitialized || isInitializing) return
+    
+    // Wait for Google Maps to be available
+    const waitForGoogleMaps = () => {
+      if (typeof window !== "undefined" && window.google?.maps?.places) {
+        initializeLocation()
+      } else {
+        // Retry after a short delay
+        setTimeout(waitForGoogleMaps, 500)
+      }
+    }
+    
+    const initializeLocation = () => {
       const service = getPlacesService()
       if (!service) {
         setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
@@ -159,11 +169,10 @@ export function PlaceSearch({
       }
     }
 
-    initializeLocation()
+    waitForGoogleMaps()
   }, [destinationName, isLocationInitialized, isInitializing, onLocationChange])
 
   const searchPlaces = async (query: string, type?: string, location = currentLocation) => {
-    console.log("[v0] searchPlaces called with:", { query, type, location, isLocationInitialized })
     setIsLoading(true)
 
     try {
@@ -179,9 +188,7 @@ export function PlaceSearch({
         finalQuery = `${query} in ${location.name}`
       }
 
-      console.log("[v0] Final query:", finalQuery)
       const results = await clientTextSearch(finalQuery, { lat: location.lat, lng: location.lng })
-      console.log("[v0] Search results:", results.length)
       setSearchResults(results)
     } catch (error) {
       console.error("[v0] Error searching places:", error)
@@ -196,7 +203,6 @@ export function PlaceSearch({
   }
 
   const handleTypeSelect = (typeId: string) => {
-    console.log("[v0] handleTypeSelect called:", { typeId, currentLocation, isLocationInitialized })
     const newType = selectedType === typeId ? null : typeId
     setSelectedType(newType)
     searchPlaces(searchQuery, newType || undefined)
