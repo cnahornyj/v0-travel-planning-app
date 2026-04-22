@@ -124,32 +124,43 @@ export function PlaceSearch({
     const initializeLocation = async () => {
       if (!destinationName || isLocationInitialized || isInitializing) return
       
+      const service = getPlacesService()
+      if (!service) {
+        setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
+        setIsLocationInitialized(true)
+        return
+      }
+      
       setIsInitializing(true)
       try {
-        const results = await clientTextSearch(destinationName + " city")
-        if (results.length > 0) {
-          const place = results[0]
-          const newLocation = {
-            lat: place.lat,
-            lng: place.lng,
-            name: destinationName,
+        const request = { query: destinationName + " city" }
+        
+        service.textSearch(request, (results: any[], status: string) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+            const place = results[0]
+            const newLocation = {
+              lat: place.geometry?.location?.lat() || 0,
+              lng: place.geometry?.location?.lng() || 0,
+              name: destinationName,
+            }
+            setCurrentLocation(newLocation)
+            onLocationChange?.(newLocation)
+          } else {
+            setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
           }
-          setCurrentLocation(newLocation)
-          onLocationChange?.(newLocation)
-        } else {
-          setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
-        }
+          setIsLocationInitialized(true)
+          setIsInitializing(false)
+        })
       } catch (error) {
         console.error("[v0] Error initializing location:", error)
         setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
-      } finally {
         setIsLocationInitialized(true)
         setIsInitializing(false)
       }
     }
 
     initializeLocation()
-  }, [destinationName, isLocationInitialized, isInitializing, clientTextSearch, onLocationChange])
+  }, [destinationName, isLocationInitialized, isInitializing, onLocationChange])
 
   const searchPlaces = async (query: string, type?: string, location = currentLocation) => {
     setIsLoading(true)
