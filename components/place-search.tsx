@@ -179,14 +179,19 @@ export function PlaceSearch({
 
     try {
       let finalQuery = query
+      if (!finalQuery && !type) {
+        // No query and no type - don't search
+        setSearchResults([])
+        setIsLoading(false)
+        return
+      }
+      
       if (!finalQuery) {
         if (type) {
           const typeLabel = PLACE_TYPES.find((t) => t.id === type)?.label || type
           finalQuery = `${typeLabel} in ${location.name}`
-        } else {
-          finalQuery = `popular places in ${location.name}`
         }
-      } else if (location.name && location.name !== "New York, NY") {
+      } else if (location.name) {
         finalQuery = `${query} in ${location.name}`
       }
 
@@ -211,7 +216,16 @@ export function PlaceSearch({
   const handleTypeSelect = (typeId: string) => {
     const newType = selectedType === typeId ? null : typeId
     setSelectedType(newType)
-    searchPlaces(searchQuery, newType || undefined)
+    if (newType) {
+      searchPlaces(searchQuery, newType)
+    } else {
+      // Clear results when unclicking a tag (unless there's a search query)
+      if (!searchQuery.trim()) {
+        setSearchResults([])
+      } else {
+        searchPlaces(searchQuery)
+      }
+    }
   }
 
   const handleManualAdd = async () => {
@@ -323,7 +337,7 @@ export function PlaceSearch({
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search for places..."
+              placeholder="Search a place by name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
