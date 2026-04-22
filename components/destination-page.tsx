@@ -420,16 +420,16 @@ export function DestinationPage() {
               )}
 
               {filteredPlaces.length === 0 ? (
-                <Card className="p-8 text-center">
+                <Card className="flex flex-col items-center p-8 text-center">
                   <p className="text-muted-foreground">
                     {trip.places.length === 0
-                      ? "No places added yet. Click \"Add Place\" to get started!"
+                      ? "No places added yet."
                       : "No places match the selected filters."}
                   </p>
                   {trip.places.length === 0 && (
                     <Button 
                       onClick={() => setShowPlaceSearch(!showPlaceSearch)}
-                      className={`mt-4 ${!showPlaceSearch ? "animate-slow-pulse" : ""}`}
+                      className={`mt-4 w-auto ${!showPlaceSearch ? "animate-slow-pulse" : ""}`}
                     >
                       {showPlaceSearch ? "Close Search" : "Add Place"}
                     </Button>
