@@ -367,7 +367,7 @@ export function PlaceSearch({
                     <img
                       src={place.photos[0] || "/placeholder.svg"}
                       alt={place.name}
-                      className="aspect-square w-full object-cover"
+                      className="aspect-[4/3] w-full object-cover"
                     />
                   )}
                   
