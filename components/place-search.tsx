@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -21,6 +21,7 @@ interface PlaceSearchProps {
   onShowDetails?: () => void
   trips?: Trip[]
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
+  destinationName?: string
 }
 
 const PLACE_TYPES = [
@@ -63,6 +64,7 @@ export function PlaceSearch({
   onShowDetails,
   trips = [],
   onAddPlaceToTrip,
+  destinationName,
 }: PlaceSearchProps) {
   const [manualName, setManualName] = useState("")
   const [manualAddress, setManualAddress] = useState("")
@@ -83,6 +85,8 @@ export function PlaceSearch({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const locationInputRef = useRef<HTMLInputElement>(null)
   const [tripSelectionPlace, setTripSelectionPlace] = useState<Place | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
 
   // Client-side text search using the Google Maps JS SDK
   const clientTextSearch = useCallback(
@@ -117,7 +121,7 @@ export function PlaceSearch({
     []
   )
 
-  const searchLocation = async (query: string) => {
+  const searchLocation = async (query: string, skipPlaceSearch = false) => {
     if (!query.trim()) return
 
     try {
@@ -128,22 +132,47 @@ export function PlaceSearch({
         const newLocation = {
           lat: place.lat,
           lng: place.lng,
-          name: place.address || place.name || query,
+          name: query,
         }
 
         setCurrentLocation(newLocation)
         onLocationChange?.(newLocation)
-        searchPlaces("", selectedType || undefined, newLocation)
+        if (!skipPlaceSearch) {
+          searchPlaces("", selectedType || undefined, newLocation)
+        }
       } else {
         const fallbackLocation = { lat: 0, lng: 0, name: query }
         setCurrentLocation(fallbackLocation)
         onLocationChange?.(fallbackLocation)
-        searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+        if (!skipPlaceSearch) {
+          searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+        }
       }
     } catch (error) {
       console.error("[v0] Error searching location:", error)
     }
   }
+
+  // Auto-initialize location from destination name
+  useEffect(() => {
+    if (!destinationName || isInitialized || isInitializing) return
+    
+    // Wait for Google Maps to be available
+    const checkAndInit = async () => {
+      if (typeof window === "undefined" || !window.google?.maps?.places) {
+        // Retry after a short delay
+        setTimeout(checkAndInit, 300)
+        return
+      }
+      
+      setIsInitializing(true)
+      await searchLocation(destinationName, true)
+      setIsInitialized(true)
+      setIsInitializing(false)
+    }
+    
+    checkAndInit()
+  }, [destinationName, isInitialized, isInitializing])
 
   const searchPlaces = async (query: string, type?: string, location = currentLocation) => {
     setIsLoading(true)
@@ -242,28 +271,39 @@ export function PlaceSearch({
         </TabsList>
 
         <TabsContent value="search" className="mt-4 space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                ref={locationInputRef}
-                type="text"
-                placeholder="Search location (e.g., Tokyo)"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLocationSearch()}
-                className="pl-10"
-              />
+          {destinationName ? (
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+              <MapPin className="size-4 text-primary" />
+              <span className="text-sm font-medium">
+                {isInitializing ? `Loading ${destinationName}...` : `Searching in: ${currentLocation.name || destinationName}`}
+              </span>
             </div>
-            <Button onClick={handleLocationSearch} variant="outline">
-              <Globe className="size-4" />
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={locationInputRef}
+                    type="text"
+                    placeholder="Search location (e.g., Tokyo)"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleLocationSearch()}
+                    className="pl-10"
+                  />
+                </div>
+                <Button onClick={handleLocationSearch} variant="outline">
+                  <Globe className="size-4" />
+                </Button>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <MapPin className="size-4 text-primary" />
-            <span className="text-sm font-medium">{currentLocation.name}</span>
-          </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="size-4 text-primary" />
+                <span className="text-sm font-medium">{currentLocation.name}</span>
+              </div>
+            </>
+          )}
 
           <div className="flex flex-wrap gap-2">
             {PLACE_TYPES.map((type) => (
