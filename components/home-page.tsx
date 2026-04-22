@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Info, Plus } from "lucide-react"
+import { Info, Plus, Trash2 } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
+import { AnimatedTagline } from "@/components/ui/animated-tagline"
 import type { Trip } from "@/components/travel-planner"
 
 export function HomePage() {
@@ -24,6 +25,8 @@ export function HomePage() {
     startDate: "",
     endDate: "",
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [tripToDelete, setTripToDelete] = useState<Trip | null>(null)
 
   useEffect(() => {
     const loadTrips = async () => {
@@ -65,6 +68,31 @@ export function HomePage() {
     }
   }
 
+  const handleDeleteClick = (e: React.MouseEvent, trip: Trip) => {
+    e.stopPropagation()
+    setTripToDelete(trip)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!tripToDelete) return
+
+    try {
+      const response = await fetch(`/api/trips/${tripToDelete.id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        setTrips((prev) => prev.filter((t) => t.id !== tripToDelete.id))
+      }
+    } catch (error) {
+      console.error("Error deleting trip:", error)
+    } finally {
+      setDeleteDialogOpen(false)
+      setTripToDelete(null)
+    }
+  }
+
   const getFirstImage = (trip: Trip) => {
     const firstPlace = trip.places.find((place) => place.photos && place.photos.length > 0)
     return firstPlace?.photos?.[0] || "/diverse-travel-destinations.png"
@@ -85,42 +113,58 @@ export function HomePage() {
       </header>
 
       <main className="mx-auto max-w-7xl p-8">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <AnimatedTagline />
+            <p className="text-muted-foreground text-center max-w-md">
+            No more Excel acrobatics. No more email archaeology.
+            <br />
+            Just travel.
+          </p>
+          </div>
           <Button size="lg" onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 size-5" />
             Create a destination
           </Button>
         </div>
 
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
             <Card
               key={trip.id}
-              className="group cursor-pointer overflow-hidden border-0 p-0 shadow-none transition-all hover:shadow-lg"
+              className="group cursor-pointer overflow-hidden border border-border/50 bg-card p-0 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-border"
               onClick={() => router.push(`/destinations/${trip.id}`)}
             >
-              <div className="relative aspect-video overflow-hidden rounded-sm">
+              <div className="relative aspect-[4/3] overflow-hidden">
                 <img
                   src={getFirstImage(trip) || "/placeholder.svg"}
                   alt={trip.name}
-                  className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                {/* Destination name with blurred background - top left */}
-                <div className="absolute top-3 left-3 rounded-sm bg-white/70 px-3 py-1.5 backdrop-blur-md">
-                  <h3 className="text-sm font-semibold text-gray-900">{trip.name}</h3>
+              </div>
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <h3 className="text-lg font-semibold text-foreground">{trip.name}</h3>
+                <div className="flex gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/destinations/${trip.id}`)
+                    }}
+                    className="size-9 rounded-full hover:bg-muted"
+                  >
+                    <Info className="size-4 text-muted-foreground" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => handleDeleteClick(e, trip)}
+                    className="size-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="size-4 text-muted-foreground" />
+                  </Button>
                 </div>
-                {/* Discovery icon - top right */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    router.push(`/destinations/${trip.id}`)
-                  }}
-                  className="absolute top-3 right-3 size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-white/90"
-                >
-                  <Info className="size-4 text-gray-900" />
-                </Button>
               </div>
             </Card>
           ))}
@@ -179,6 +223,25 @@ export function HomePage() {
             </div>
             <Button onClick={handleCreateTrip} disabled={!newTrip.name} className="w-full">
               Create Destination
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Destination</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground">
+            Are you sure you want to delete {tripToDelete?.name}?
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
             </Button>
           </div>
         </DialogContent>
