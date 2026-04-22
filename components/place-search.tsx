@@ -301,29 +301,30 @@ export function PlaceSearch({
             </div>
           )}
 
-          <div className="space-y-3">
-            {searchResults.map((place) => (
-              <Card
-                key={place.id}
-                className="cursor-pointer p-4 transition-colors hover:bg-muted/50"
-                onClick={() => onPlaceSelect(place)}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-medium">{place.name}</h4>
-                      {place.isOpen !== undefined && (
-                        <Badge variant={place.isOpen ? "default" : "secondary"} className="mt-1">
-                          {place.isOpen ? "Open" : "Closed"}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex gap-1">
+          <div className="max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3">
+              {searchResults.map((place) => (
+                <Card
+                  key={place.id}
+                  className="cursor-pointer p-3 transition-colors hover:bg-muted/50"
+                  onClick={() => onPlaceSelect(place)}
+                >
+                  <div className="space-y-2">
+                    {place.photos && place.photos.length > 0 && (
+                      <img
+                        src={place.photos[0] || "/placeholder.svg"}
+                        alt={place.name}
+                        className="h-24 w-full rounded object-cover"
+                      />
+                    )}
+                    
+                    <div className="flex items-start justify-between gap-1">
+                      <h4 className="line-clamp-2 text-sm font-medium">{place.name}</h4>
                       {trips.length > 0 && (
                         <Button
                           size="sm"
-                          variant="outline"
+                          variant="ghost"
+                          className="size-7 shrink-0 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             setTripSelectionPlace(place)
@@ -333,43 +334,29 @@ export function PlaceSearch({
                         </Button>
                       )}
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="size-3" />
-                    <span className="line-clamp-1">{place.address}</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {place.rating && (
-                      <Badge variant="secondary">
-                        <Star className="mr-1 size-3 fill-yellow-400 text-yellow-400" />
-                        {place.rating}
-                      </Badge>
-                    )}
-
-                    {place.type && (
-                      <Badge variant="outline" className="capitalize">
-                        {place.type.replace("_", " ")}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {place.photos && place.photos.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto">
-                      {place.photos.slice(0, 3).map((photo, index) => (
-                        <img
-                          key={index}
-                          src={photo || "/placeholder.svg"}
-                          alt={`${place.name} ${index + 1}`}
-                          className="size-20 rounded object-cover"
-                        />
-                      ))}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="size-3 shrink-0" />
+                      <span className="line-clamp-1">{place.address}</span>
                     </div>
-                  )}
-                </div>
-              </Card>
-            ))}
+
+                    <div className="flex flex-wrap gap-1">
+                      {place.rating && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Star className="mr-1 size-3 fill-yellow-400 text-yellow-400" />
+                          {place.rating}
+                        </Badge>
+                      )}
+                      {place.isOpen !== undefined && (
+                        <Badge variant={place.isOpen ? "default" : "secondary"} className="text-xs">
+                          {place.isOpen ? "Open" : "Closed"}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         </TabsContent>
 
