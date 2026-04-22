@@ -112,11 +112,12 @@ export function HomePage() {
       </header>
 
       <main className="mx-auto max-w-7xl p-8">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex flex-col items-center gap-2">
           <Button size="lg" onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 size-5" />
             Create a destination
           </Button>
+          <p className="text-sm text-muted-foreground italic">Disco-ver your next adventure</p>
         </div>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
