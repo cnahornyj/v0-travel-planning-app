@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -21,6 +21,7 @@ interface PlaceSearchProps {
   onShowDetails?: () => void
   trips?: Trip[]
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
+  destinationName?: string
 }
 
 const PLACE_TYPES = [
@@ -63,6 +64,7 @@ export function PlaceSearch({
   onShowDetails,
   trips = [],
   onAddPlaceToTrip,
+  destinationName,
 }: PlaceSearchProps) {
   const [manualName, setManualName] = useState("")
   const [manualAddress, setManualAddress] = useState("")
@@ -83,6 +85,8 @@ export function PlaceSearch({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const locationInputRef = useRef<HTMLInputElement>(null)
   const [tripSelectionPlace, setTripSelectionPlace] = useState<Place | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
 
   // Client-side text search using the Google Maps JS SDK
   const clientTextSearch = useCallback(
@@ -117,7 +121,7 @@ export function PlaceSearch({
     []
   )
 
-  const searchLocation = async (query: string) => {
+  const searchLocation = async (query: string, skipPlaceSearch = false) => {
     if (!query.trim()) return
 
     try {
@@ -128,36 +132,66 @@ export function PlaceSearch({
         const newLocation = {
           lat: place.lat,
           lng: place.lng,
-          name: place.address || place.name || query,
+          name: query,
         }
 
         setCurrentLocation(newLocation)
         onLocationChange?.(newLocation)
-        searchPlaces("", selectedType || undefined, newLocation)
+        if (!skipPlaceSearch) {
+          searchPlaces("", selectedType || undefined, newLocation)
+        }
       } else {
         const fallbackLocation = { lat: 0, lng: 0, name: query }
         setCurrentLocation(fallbackLocation)
         onLocationChange?.(fallbackLocation)
-        searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+        if (!skipPlaceSearch) {
+          searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+        }
       }
     } catch (error) {
       console.error("[v0] Error searching location:", error)
     }
   }
 
+  // Auto-initialize location from destination name
+  useEffect(() => {
+    if (!destinationName || isInitialized || isInitializing) return
+    
+    // Wait for Google Maps to be available
+    const checkAndInit = async () => {
+      if (typeof window === "undefined" || !window.google?.maps?.places) {
+        // Retry after a short delay
+        setTimeout(checkAndInit, 300)
+        return
+      }
+      
+      setIsInitializing(true)
+      await searchLocation(destinationName, true)
+      setIsInitialized(true)
+      setIsInitializing(false)
+    }
+    
+    checkAndInit()
+  }, [destinationName, isInitialized, isInitializing])
+
   const searchPlaces = async (query: string, type?: string, location = currentLocation) => {
     setIsLoading(true)
 
     try {
       let finalQuery = query
+      if (!finalQuery && !type) {
+        // No query and no type - don't search
+        setSearchResults([])
+        setIsLoading(false)
+        return
+      }
+      
       if (!finalQuery) {
         if (type) {
           const typeLabel = PLACE_TYPES.find((t) => t.id === type)?.label || type
           finalQuery = `${typeLabel} in ${location.name}`
-        } else {
-          finalQuery = `popular places in ${location.name}`
         }
-      } else if (location.name && location.name !== "New York, NY") {
+      } else if (location.name) {
         finalQuery = `${query} in ${location.name}`
       }
 
@@ -182,7 +216,16 @@ export function PlaceSearch({
   const handleTypeSelect = (typeId: string) => {
     const newType = selectedType === typeId ? null : typeId
     setSelectedType(newType)
-    searchPlaces(searchQuery, newType || undefined)
+    if (newType) {
+      searchPlaces(searchQuery, newType)
+    } else {
+      // Clear results when unclicking a tag (unless there's a search query)
+      if (!searchQuery.trim()) {
+        setSearchResults([])
+      } else {
+        searchPlaces(searchQuery)
+      }
+    }
   }
 
   const handleManualAdd = async () => {
@@ -228,7 +271,7 @@ export function PlaceSearch({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       <Tabs defaultValue="search" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="search">
@@ -236,41 +279,52 @@ export function PlaceSearch({
             Search Maps
           </TabsTrigger>
           <TabsTrigger value="manual">
-            <PlusCircle className="mr-2 size-4" />
+            <Plus className="mr-2 size-4" />
             Manual Entry
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mt-4 space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                ref={locationInputRef}
-                type="text"
-                placeholder="Search location (e.g., Tokyo)"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLocationSearch()}
-                className="pl-10"
-              />
+          {destinationName ? (
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+              <MapPin className="size-4 text-primary" />
+              <span className="text-sm font-medium">
+                {isInitializing ? `Loading ${destinationName}...` : `Searching in: ${currentLocation.name || destinationName}`}
+              </span>
             </div>
-            <Button onClick={handleLocationSearch} variant="outline">
-              <Globe className="size-4" />
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={locationInputRef}
+                    type="text"
+                    placeholder="Search location (e.g., Tokyo)"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleLocationSearch()}
+                    className="pl-10"
+                  />
+                </div>
+                <Button onClick={handleLocationSearch} variant="outline">
+                  <Globe className="size-4" />
+                </Button>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <MapPin className="size-4 text-primary" />
-            <span className="text-sm font-medium">{currentLocation.name}</span>
-          </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="size-4 text-primary" />
+                <span className="text-sm font-medium">{currentLocation.name}</span>
+              </div>
+            </>
+          )}
 
           <div className="flex flex-wrap gap-2">
             {PLACE_TYPES.map((type) => (
               <Badge
                 key={type.id}
                 variant={selectedType === type.id ? "default" : "outline"}
-                className="cursor-pointer gap-2"
+                className="cursor-pointer"
                 onClick={() => handleTypeSelect(type.id)}
               >
                 {type.icon}
@@ -283,7 +337,7 @@ export function PlaceSearch({
             <Input
               ref={searchInputRef}
               type="text"
-              placeholder="Search for places (e.g., museums, restaurants)"
+              placeholder="Search a place by name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -296,80 +350,57 @@ export function PlaceSearch({
           </div>
 
           {isLoading && (
-            <div className="flex items-center justify-center py-8">
-              <TravelSpinner size="sm" message="Searching..." />
+            <div className="flex justify-center py-8">
+              <TravelSpinner size="md" message="Searching places..." />
             </div>
           )}
 
-          <div className="space-y-2">
-            {searchResults.map((place) => (
-              <Card
-                key={place.id}
-                className="cursor-pointer p-4 transition-all hover:shadow-md"
-                onClick={() => onPlaceSelect(place)}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold leading-tight">{place.name}</h3>
-                      {place.isOpen !== undefined && (
-                        <Badge variant={place.isOpen ? "default" : "secondary"} className="mt-1">
-                          {place.isOpen ? "Open" : "Closed"}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
+          <div className="max-h-[450px] overflow-y-auto">
+            <div className="grid grid-cols-3 gap-2">
+              {searchResults.map((place) => (
+                <Card
+                  key={place.id}
+                  className="cursor-pointer overflow-hidden transition-colors hover:bg-muted/50"
+                  onClick={() => onPlaceSelect(place)}
+                >
+                  {place.photos && place.photos.length > 0 && (
+                    <img
+                      src={place.photos[0] || "/placeholder.svg"}
+                      alt={place.name}
+                      className="aspect-square w-full object-cover"
+                    />
+                  )}
+                  
+                  <div className="flex flex-col gap-1 p-2">
+                    <div className="flex items-start justify-between gap-1">
+                      <h4 className="line-clamp-2 text-xs font-medium">{place.name}</h4>
                       {trips.length > 0 && (
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="size-5 shrink-0 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             setTripSelectionPlace(place)
                           }}
                         >
-                          <Plus className="size-4" />
+                          <PlusCircle className="size-3" />
                         </Button>
                       )}
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <MapPin className="mt-0.5 size-4 shrink-0" />
-                    <span>{place.address}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
                     {place.rating && (
                       <div className="flex items-center gap-1">
-                        <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{place.rating}</span>
+                        <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                          <Star className="mr-0.5 size-2.5 fill-yellow-400 text-yellow-400" />
+                          {place.rating}
+                        </Badge>
                       </div>
                     )}
-
-                    {place.type && (
-                      <Badge variant="outline" className="text-xs">
-                        {place.type.replace("_", " ")}
-                      </Badge>
-                    )}
                   </div>
-
-                  {place.photos && place.photos.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto">
-                      {place.photos.slice(0, 3).map((photo, index) => (
-                        <img
-                          key={index}
-                          src={photo || "/placeholder.svg"}
-                          alt={`${place.name} ${index + 1}`}
-                          className="size-20 rounded object-cover"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
         </TabsContent>
 
@@ -386,7 +417,7 @@ export function PlaceSearch({
               <Label htmlFor="manual-name">Place Name *</Label>
               <Input
                 id="manual-name"
-                placeholder="e.g., Yuen Shinjuku Onsen"
+                placeholder="e.g., Secret Garden Cafe"
                 value={manualName}
                 onChange={(e) => setManualName(e.target.value)}
               />
@@ -396,7 +427,7 @@ export function PlaceSearch({
               <Label htmlFor="manual-address">Address *</Label>
               <Input
                 id="manual-address"
-                placeholder="e.g., 1-1 Kabukicho, Shinjuku City, Tokyo"
+                placeholder="e.g., 123 Main St, Tokyo, Japan"
                 value={manualAddress}
                 onChange={(e) => setManualAddress(e.target.value)}
               />
@@ -407,9 +438,7 @@ export function PlaceSearch({
                 <Label htmlFor="manual-lat">Latitude (optional)</Label>
                 <Input
                   id="manual-lat"
-                  type="number"
-                  step="any"
-                  placeholder="e.g., 35.6895"
+                  placeholder="e.g., 35.6762"
                   value={manualLat}
                   onChange={(e) => setManualLat(e.target.value)}
                 />
@@ -418,9 +447,7 @@ export function PlaceSearch({
                 <Label htmlFor="manual-lng">Longitude (optional)</Label>
                 <Input
                   id="manual-lng"
-                  type="number"
-                  step="any"
-                  placeholder="e.g., 139.6917"
+                  placeholder="e.g., 139.6503"
                   value={manualLng}
                   onChange={(e) => setManualLng(e.target.value)}
                 />
@@ -431,32 +458,28 @@ export function PlaceSearch({
               <Label htmlFor="manual-notes">Notes (optional)</Label>
               <Textarea
                 id="manual-notes"
-                placeholder="Add any additional information about this place..."
+                placeholder="Any additional details..."
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
                 rows={3}
               />
             </div>
 
-            <Button
-              onClick={handleManualAdd}
-              className="w-full"
-              disabled={isManualLoading || !manualName.trim() || !manualAddress.trim()}
-            >
+            <Button onClick={handleManualAdd} disabled={!manualName.trim() || !manualAddress.trim() || isManualLoading} className="w-full">
               {isManualLoading ? (
                 <>
                   <svg
-                    viewBox="0 0 24 24"
                     className="mr-2 size-4 animate-spin"
+                    xmlns="http://www.w3.org/2000/svg"
                     fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+                    viewBox="0 0 24 24"
                   >
-                    <circle cx="12" cy="12" r="3" className="fill-current/20" />
-                    <path d="M12 2L12 6" strokeLinecap="round" />
-                    <path d="M12 18L12 22" strokeLinecap="round" />
-                    <path d="M2 12L6 12" strokeLinecap="round" />
-                    <path d="M18 12L22 12" strokeLinecap="round" />
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Adding Place...
                 </>
@@ -483,7 +506,7 @@ export function PlaceSearch({
               <Button
                 key={trip.id}
                 variant="outline"
-                className="w-full justify-start bg-transparent"
+                className="w-full justify-start"
                 onClick={() => {
                   if (tripSelectionPlace && onAddPlaceToTrip) {
                     onAddPlaceToTrip(trip.id, tripSelectionPlace)
