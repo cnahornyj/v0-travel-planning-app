@@ -113,12 +113,12 @@ export function HomePage() {
       </header>
 
       <main className="mx-auto max-w-7xl p-8">
-        <div className="mb-8 flex flex-col items-center gap-2">
+        <div className="mb-8 flex flex-col items-center gap-4">
+          <AnimatedTagline />
           <Button size="lg" onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 size-5" />
             Create a destination
           </Button>
-          <AnimatedTagline />
         </div>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
