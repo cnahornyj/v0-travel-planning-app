@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Search, MapPin, Star, Plus, Globe, Calendar, PlusCircle, Info } from "lucide-react"
+import { Search, MapPin, Star, Plus, Calendar, PlusCircle, Info } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import type { Place, Trip } from "./travel-planner"
 
@@ -21,6 +21,7 @@ interface PlaceSearchProps {
   onShowDetails?: () => void
   trips?: Trip[]
   onAddPlaceToTrip?: (tripId: string, place: Place) => void
+  destinationName?: string
 }
 
 const PLACE_TYPES = [
@@ -63,6 +64,7 @@ export function PlaceSearch({
   onShowDetails,
   trips = [],
   onAddPlaceToTrip,
+  destinationName,
 }: PlaceSearchProps) {
   const [manualName, setManualName] = useState("")
   const [manualAddress, setManualAddress] = useState("")
@@ -71,17 +73,17 @@ export function PlaceSearch({
   const [manualLng, setManualLng] = useState("")
   const [isManualLoading, setIsManualLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [locationQuery, setLocationQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Place[]>([])
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; name: string }>({
-    lat: 40.7128,
-    lng: -74.006,
-    name: "New York, NY",
+    lat: 0,
+    lng: 0,
+    name: destinationName || "",
   })
+  const [isLocationInitialized, setIsLocationInitialized] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const locationInputRef = useRef<HTMLInputElement>(null)
   const [tripSelectionPlace, setTripSelectionPlace] = useState<Place | null>(null)
 
   // Client-side text search using the Google Maps JS SDK
@@ -117,33 +119,37 @@ export function PlaceSearch({
     []
   )
 
-  const searchLocation = async (query: string) => {
-    if (!query.trim()) return
-
-    try {
-      const results = await clientTextSearch(query + " city")
-
-      if (results.length > 0) {
-        const place = results[0]
-        const newLocation = {
-          lat: place.lat,
-          lng: place.lng,
-          name: place.address || place.name || query,
+  // Auto-initialize location from destination name
+  useEffect(() => {
+    const initializeLocation = async () => {
+      if (!destinationName || isLocationInitialized || isInitializing) return
+      
+      setIsInitializing(true)
+      try {
+        const results = await clientTextSearch(destinationName + " city")
+        if (results.length > 0) {
+          const place = results[0]
+          const newLocation = {
+            lat: place.lat,
+            lng: place.lng,
+            name: destinationName,
+          }
+          setCurrentLocation(newLocation)
+          onLocationChange?.(newLocation)
+        } else {
+          setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
         }
-
-        setCurrentLocation(newLocation)
-        onLocationChange?.(newLocation)
-        searchPlaces("", selectedType || undefined, newLocation)
-      } else {
-        const fallbackLocation = { lat: 0, lng: 0, name: query }
-        setCurrentLocation(fallbackLocation)
-        onLocationChange?.(fallbackLocation)
-        searchPlaces(query + " attractions", selectedType || undefined, fallbackLocation)
+      } catch (error) {
+        console.error("[v0] Error initializing location:", error)
+        setCurrentLocation({ lat: 0, lng: 0, name: destinationName })
+      } finally {
+        setIsLocationInitialized(true)
+        setIsInitializing(false)
       }
-    } catch (error) {
-      console.error("[v0] Error searching location:", error)
     }
-  }
+
+    initializeLocation()
+  }, [destinationName, isLocationInitialized, isInitializing, clientTextSearch, onLocationChange])
 
   const searchPlaces = async (query: string, type?: string, location = currentLocation) => {
     setIsLoading(true)
@@ -157,7 +163,7 @@ export function PlaceSearch({
         } else {
           finalQuery = `popular places in ${location.name}`
         }
-      } else if (location.name && location.name !== "New York, NY") {
+      } else if (location.name) {
         finalQuery = `${query} in ${location.name}`
       }
 
@@ -173,10 +179,6 @@ export function PlaceSearch({
 
   const handleSearch = () => {
     searchPlaces(searchQuery, selectedType || undefined)
-  }
-
-  const handleLocationSearch = () => {
-    searchLocation(locationQuery)
   }
 
   const handleTypeSelect = (typeId: string) => {
@@ -242,30 +244,18 @@ export function PlaceSearch({
         </TabsList>
 
         <TabsContent value="search" className="mt-4 space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <MapPin className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                ref={locationInputRef}
-                type="text"
-                placeholder="Search location (e.g., Tokyo)"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLocationSearch()}
-                className="pl-10"
-              />
+          {isInitializing ? (
+            <div className="flex items-center justify-center py-4">
+              <TravelSpinner size="sm" message={`Loading ${destinationName}...`} />
             </div>
-            <Button onClick={handleLocationSearch} variant="outline">
-              <Globe className="size-4" />
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+                <MapPin className="size-4 text-primary" />
+                <span className="text-sm font-medium">Searching in: {currentLocation.name || destinationName}</span>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <MapPin className="size-4 text-primary" />
-            <span className="text-sm font-medium">{currentLocation.name}</span>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
             {PLACE_TYPES.map((type) => (
               <Badge
                 key={type.id}
@@ -371,6 +361,8 @@ export function PlaceSearch({
               </Card>
             ))}
           </div>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="manual" className="mt-4 space-y-4">
