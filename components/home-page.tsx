@@ -114,10 +114,10 @@ export function HomePage() {
 
       <main className="mx-auto max-w-7xl p-8">
         <div className="mb-8 flex flex-col items-center gap-4">
+          <AnimatedTagline />
           <p className="text-muted-foreground text-center max-w-md">
             No more Excel acrobatics. No more email archaeology. Just travel.
           </p>
-          <AnimatedTagline />
           <Button size="lg" onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 size-5" />
             Create a destination
