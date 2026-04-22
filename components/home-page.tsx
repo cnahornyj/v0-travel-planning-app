@@ -121,25 +121,23 @@ export function HomePage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+        <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
             <Card
               key={trip.id}
-              className="group cursor-pointer overflow-hidden border-0 p-0 shadow-none transition-all hover:shadow-lg"
+              className="group cursor-pointer overflow-hidden border border-border/50 bg-card p-0 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-border"
               onClick={() => router.push(`/destinations/${trip.id}`)}
             >
-              <div className="relative aspect-video overflow-hidden rounded-sm">
+              <div className="relative aspect-[4/3] overflow-hidden">
                 <img
                   src={getFirstImage(trip) || "/placeholder.svg"}
                   alt={trip.name}
-                  className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
-                {/* Destination name with blurred background - top left */}
-                <div className="absolute top-3 left-3 rounded-sm bg-white/70 px-3 py-1.5 backdrop-blur-md">
-                  <h3 className="text-sm font-semibold text-gray-900">{trip.name}</h3>
-                </div>
-                {/* Action buttons - top right */}
-                <div className="absolute top-3 right-3 flex gap-1.5">
+              </div>
+              <div className="flex items-center justify-between p-4">
+                <h3 className="text-lg font-semibold text-foreground">{trip.name}</h3>
+                <div className="flex gap-2">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -147,17 +145,17 @@ export function HomePage() {
                       e.stopPropagation()
                       router.push(`/destinations/${trip.id}`)
                     }}
-                    className="size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-white/90"
+                    className="size-9 rounded-full hover:bg-muted"
                   >
-                    <Info className="size-4 text-gray-900" />
+                    <Info className="size-4 text-muted-foreground" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={(e) => handleDeleteClick(e, trip)}
-                    className="size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-red-100"
+                    className="size-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
                   >
-                    <Trash2 className="size-4 text-gray-900" />
+                    <Trash2 className="size-4 text-muted-foreground" />
                   </Button>
                 </div>
               </div>
