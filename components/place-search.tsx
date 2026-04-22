@@ -360,44 +360,44 @@ export function PlaceSearch({
               {searchResults.map((place) => (
                 <Card
                   key={place.id}
-                  className="cursor-pointer overflow-hidden transition-colors hover:bg-muted/50"
+                  className="group relative cursor-pointer overflow-hidden"
                   onClick={() => onPlaceSelect(place)}
                 >
-                  {place.photos && place.photos.length > 0 && (
+                  {place.photos && place.photos.length > 0 ? (
                     <img
-                      src={place.photos[0] || "/placeholder.svg"}
+                      src={place.photos[0]}
                       alt={place.name}
-                      className="aspect-square w-full object-cover"
+                      className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                     />
+                  ) : (
+                    <div className="flex aspect-square w-full items-center justify-center bg-muted">
+                      <MapPin className="size-8 text-muted-foreground" />
+                    </div>
                   )}
                   
-                  <div className="flex flex-col gap-1 p-2">
-                    <div className="flex items-start justify-between gap-1">
-                      <h4 className="line-clamp-2 text-xs font-medium">{place.name}</h4>
-                      {trips.length > 0 && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="size-5 shrink-0 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setTripSelectionPlace(place)
-                          }}
-                        >
-                          <PlusCircle className="size-3" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {place.rating && (
-                        <Badge variant="secondary" className="px-1 py-0 text-[10px]">
-                          <Star className="mr-0.5 size-2.5 fill-yellow-400 text-yellow-400" />
-                          {place.rating}
-                        </Badge>
-                      )}
-                    </div>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6">
+                    <h4 className="line-clamp-2 text-xs font-medium text-white">{place.name}</h4>
+                    {place.rating && (
+                      <div className="mt-1 flex items-center gap-0.5">
+                        <Star className="size-2.5 fill-yellow-400 text-yellow-400" />
+                        <span className="text-[10px] text-white/90">{place.rating}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {trips.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute right-1 top-1 size-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setTripSelectionPlace(place)
+                      }}
+                    >
+                      <PlusCircle className="size-3" />
+                    </Button>
+                  )}
                 </Card>
               ))}
             </div>
