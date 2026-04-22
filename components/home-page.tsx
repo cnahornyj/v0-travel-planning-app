@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Info, Plus } from "lucide-react"
+import { Info, Plus, Trash2 } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 import type { Trip } from "@/components/travel-planner"
@@ -24,6 +24,8 @@ export function HomePage() {
     startDate: "",
     endDate: "",
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [tripToDelete, setTripToDelete] = useState<Trip | null>(null)
 
   useEffect(() => {
     const loadTrips = async () => {
@@ -62,6 +64,31 @@ export function HomePage() {
       }
     } catch (error) {
       console.error("Error creating trip:", error)
+    }
+  }
+
+  const handleDeleteClick = (e: React.MouseEvent, trip: Trip) => {
+    e.stopPropagation()
+    setTripToDelete(trip)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!tripToDelete) return
+
+    try {
+      const response = await fetch(`/api/trips/${tripToDelete.id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        setTrips((prev) => prev.filter((t) => t.id !== tripToDelete.id))
+      }
+    } catch (error) {
+      console.error("Error deleting trip:", error)
+    } finally {
+      setDeleteDialogOpen(false)
+      setTripToDelete(null)
     }
   }
 
@@ -109,18 +136,28 @@ export function HomePage() {
                 <div className="absolute top-3 left-3 rounded-sm bg-white/70 px-3 py-1.5 backdrop-blur-md">
                   <h3 className="text-sm font-semibold text-gray-900">{trip.name}</h3>
                 </div>
-                {/* Discovery icon - top right */}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    router.push(`/destinations/${trip.id}`)
-                  }}
-                  className="absolute top-3 right-3 size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-white/90"
-                >
-                  <Info className="size-4 text-gray-900" />
-                </Button>
+                {/* Action buttons - top right */}
+                <div className="absolute top-3 right-3 flex gap-1.5">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      router.push(`/destinations/${trip.id}`)
+                    }}
+                    className="size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-white/90"
+                  >
+                    <Info className="size-4 text-gray-900" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => handleDeleteClick(e, trip)}
+                    className="size-8 rounded-sm bg-white/70 backdrop-blur-md hover:bg-red-100"
+                  >
+                    <Trash2 className="size-4 text-gray-900" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
@@ -179,6 +216,25 @@ export function HomePage() {
             </div>
             <Button onClick={handleCreateTrip} disabled={!newTrip.name} className="w-full">
               Create Destination
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Destination</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground">
+            Are you sure you want to delete {tripToDelete?.name}?
+          </p>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
             </Button>
           </div>
         </DialogContent>
