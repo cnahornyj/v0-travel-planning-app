@@ -24,11 +24,11 @@ export function AnimatedTagline() {
   const [isDiscovery, setIsDiscovery] = useState(false)
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsDiscovery((prev) => !prev)
-    }, 3000)
+    const timeout = setTimeout(() => {
+      setIsDiscovery(true)
+    }, 1500)
 
-    return () => clearInterval(interval)
+    return () => clearTimeout(timeout)
   }, [])
 
   return (
@@ -52,7 +52,7 @@ export function AnimatedTagline() {
           </motion.span>
         ))}
       </span>
-      <span>{staticPart}</span>
+      <span className="ml-2">{staticPart}</span>
     </p>
   )
 }
