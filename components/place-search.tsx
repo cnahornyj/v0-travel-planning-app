@@ -368,7 +368,7 @@ export function PlaceSearch({
                       <img
                         src={place.photos[0] || "/placeholder.svg"}
                         alt={place.name}
-                        className="h-24 w-full rounded object-cover"
+                        className="h-32 w-full rounded object-cover"
                       />
                     )}
                     
