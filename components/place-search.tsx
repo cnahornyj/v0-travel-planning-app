@@ -356,7 +356,7 @@ export function PlaceSearch({
           )}
 
           <div className="max-h-[450px] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               {searchResults.map((place) => (
                 <Card
                   key={place.id}
@@ -367,43 +367,33 @@ export function PlaceSearch({
                     <img
                       src={place.photos[0] || "/placeholder.svg"}
                       alt={place.name}
-                      className="aspect-[5/4] w-full object-cover"
+                      className="aspect-square w-full object-cover"
                     />
                   )}
                   
-                  <div className="flex flex-col gap-1.5 p-3">
+                  <div className="flex flex-col gap-1 p-2">
                     <div className="flex items-start justify-between gap-1">
-                      <h4 className="line-clamp-2 text-sm font-medium">{place.name}</h4>
+                      <h4 className="line-clamp-2 text-xs font-medium">{place.name}</h4>
                       {trips.length > 0 && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="size-6 shrink-0 p-0"
+                          className="size-5 shrink-0 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             setTripSelectionPlace(place)
                           }}
                         >
-                          <PlusCircle className="size-4" />
+                          <PlusCircle className="size-3" />
                         </Button>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="size-3 shrink-0" />
-                      <span className="line-clamp-1">{place.address}</span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex items-center gap-1">
                       {place.rating && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Star className="mr-1 size-3 fill-yellow-400 text-yellow-400" />
+                        <Badge variant="secondary" className="px-1 py-0 text-[10px]">
+                          <Star className="mr-0.5 size-2.5 fill-yellow-400 text-yellow-400" />
                           {place.rating}
-                        </Badge>
-                      )}
-                      {place.isOpen !== undefined && (
-                        <Badge variant={place.isOpen ? "default" : "secondary"} className="text-xs">
-                          {place.isOpen ? "Open" : "Closed"}
                         </Badge>
                       )}
                     </div>
