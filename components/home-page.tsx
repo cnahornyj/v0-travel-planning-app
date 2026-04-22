@@ -135,7 +135,7 @@ export function HomePage() {
                   className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
-              <div className="flex items-center justify-between p-4">
+              <div className="flex items-center justify-between px-4 py-2.5">
                 <h3 className="text-lg font-semibold text-foreground">{trip.name}</h3>
                 <div className="flex gap-2">
                   <Button
