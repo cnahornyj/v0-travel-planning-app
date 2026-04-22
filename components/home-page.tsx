@@ -116,7 +116,9 @@ export function HomePage() {
         <div className="mb-8 flex flex-col items-center gap-4">
           <AnimatedTagline />
           <p className="text-muted-foreground text-center max-w-md">
-            No more Excel acrobatics. No more email archaeology. Just travel.
+            No more Excel acrobatics. No more email archaeology.
+            <br />
+            Just travel.
           </p>
           <Button size="lg" onClick={() => setShowCreateDialog(true)}>
             <Plus className="mr-2 size-5" />
