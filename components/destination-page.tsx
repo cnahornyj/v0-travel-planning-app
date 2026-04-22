@@ -346,7 +346,9 @@ export function DestinationPage() {
           </Button>
           <Button 
             onClick={() => setShowPlaceSearch(!showPlaceSearch)}
-            className="bg-white text-primary hover:bg-white/90"
+            className={`bg-white text-primary hover:bg-white/90 ${
+              trip.places.length === 0 && !showPlaceSearch ? "animate-slow-pulse" : ""
+            }`}
           >
             {showPlaceSearch ? "Close Search" : "Add Place"}
           </Button>
@@ -629,14 +631,16 @@ export function DestinationPage() {
               )}
             </div>
 
-            <div className="h-[500px] overflow-hidden rounded-lg border">
-              <GoogleMap
-                center={mapCenter}
-                selectedPlace={selectedPlace}
-                savedPlaces={filteredPlaces}
-                onPlaceSelect={handlePlaceSelect}
-              />
-            </div>
+            {filteredPlaces.length > 0 && (
+              <div className="h-[500px] overflow-hidden rounded-lg border">
+                <GoogleMap
+                  center={mapCenter}
+                  selectedPlace={selectedPlace}
+                  savedPlaces={filteredPlaces}
+                  onPlaceSelect={handlePlaceSelect}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
