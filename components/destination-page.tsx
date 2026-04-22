@@ -331,27 +331,29 @@ export function DestinationPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
-            className={showScheduleSidebar ? "border-white bg-white text-primary" : "border-white/50 bg-transparent text-white hover:bg-white/20"}
-          >
-            <Calendar className="mr-2 size-4" />
-            Schedule
-            {(trip.scheduledEvents?.length ?? 0) > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {trip.scheduledEvents?.length}
-              </Badge>
-            )}
-          </Button>
-          <Button 
-            onClick={() => setShowPlaceSearch(!showPlaceSearch)}
-            className={`bg-white text-primary hover:bg-white/90 ${
-              trip.places.length === 0 && !showPlaceSearch ? "animate-slow-pulse" : ""
-            }`}
-          >
-            {showPlaceSearch ? "Close Search" : "Add Place"}
-          </Button>
+          {trip.places.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+              className={showScheduleSidebar ? "border-white bg-white text-primary" : "border-white/50 bg-transparent text-white hover:bg-white/20"}
+            >
+              <Calendar className="mr-2 size-4" />
+              Schedule
+              {(trip.scheduledEvents?.length ?? 0) > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {trip.scheduledEvents?.length}
+                </Badge>
+              )}
+            </Button>
+          )}
+          {trip.places.length > 0 && (
+            <Button 
+              onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+              className="bg-white text-primary hover:bg-white/90"
+            >
+              {showPlaceSearch ? "Close Search" : "Add Place"}
+            </Button>
+          )}
         </div>
       </header>
 
@@ -421,9 +423,17 @@ export function DestinationPage() {
                 <Card className="p-8 text-center">
                   <p className="text-muted-foreground">
                     {trip.places.length === 0
-                      ? 'No places added yet. Click "Add Place" to get started!'
+                      ? "No places added yet. Click \"Add Place\" to get started!"
                       : "No places match the selected filters."}
                   </p>
+                  {trip.places.length === 0 && (
+                    <Button 
+                      onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+                      className={`mt-4 ${!showPlaceSearch ? "animate-slow-pulse" : ""}`}
+                    >
+                      {showPlaceSearch ? "Close Search" : "Add Place"}
+                    </Button>
+                  )}
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
