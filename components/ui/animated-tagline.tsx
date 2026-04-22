@@ -3,20 +3,23 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 
-// Letter positions for "Verydisco" -> "Discovery"
+// Letter mappings for "Verydisco" <-> "Discovery" 
+// Both words have exactly 9 letters, using fixed-width positioning
+const letterWidth = 1.1 // rem per letter for consistent spacing
+
+// Position mapping: which position each letter moves to
 // Verydisco: V(0) e(1) r(2) y(3) d(4) i(5) s(6) c(7) o(8)
 // Discovery: D(0) i(1) s(2) c(3) o(4) v(5) e(6) r(7) y(8)
-
 const letters = [
-  { char: "V", fromIndex: 0, toIndex: 5, toChar: "v" },
-  { char: "e", fromIndex: 1, toIndex: 6, toChar: "e" },
-  { char: "r", fromIndex: 2, toIndex: 7, toChar: "r" },
-  { char: "y", fromIndex: 3, toIndex: 8, toChar: "y" },
-  { char: "d", fromIndex: 4, toIndex: 0, toChar: "D" },
-  { char: "i", fromIndex: 5, toIndex: 1, toChar: "i" },
-  { char: "s", fromIndex: 6, toIndex: 2, toChar: "s" },
-  { char: "c", fromIndex: 7, toIndex: 3, toChar: "c" },
-  { char: "o", fromIndex: 8, toIndex: 4, toChar: "o" },
+  { fromChar: "V", toChar: "v", fromPos: 0, toPos: 5 },
+  { fromChar: "e", toChar: "e", fromPos: 1, toPos: 6 },
+  { fromChar: "r", toChar: "r", fromPos: 2, toPos: 7 },
+  { fromChar: "y", toChar: "y", fromPos: 3, toPos: 8 },
+  { fromChar: "d", toChar: "D", fromPos: 4, toPos: 0 },
+  { fromChar: "i", toChar: "i", fromPos: 5, toPos: 1 },
+  { fromChar: "s", toChar: "s", fromPos: 6, toPos: 2 },
+  { fromChar: "c", toChar: "c", fromPos: 7, toPos: 3 },
+  { fromChar: "o", toChar: "o", fromPos: 8, toPos: 4 },
 ]
 
 export function AnimatedTagline() {
@@ -30,34 +33,36 @@ export function AnimatedTagline() {
     return () => clearInterval(interval)
   }, [])
 
-  // Calculate position offset based on character width (approx 0.6em per char)
-  const getOffset = (fromIndex: number, toIndex: number) => {
-    const diff = toIndex - fromIndex
-    return diff * 0.6 // em units
-  }
-
   return (
-    <p className="text-sm text-muted-foreground italic h-6 flex items-center justify-center">
-      <span className="relative inline-flex" style={{ width: "9ch" }}>
+    <p className="text-xl font-medium text-muted-foreground h-10 flex items-center justify-center tracking-wide">
+      <span 
+        className="relative inline-flex font-mono"
+        style={{ width: `${9 * letterWidth}rem` }}
+      >
         {letters.map((letter, i) => (
           <motion.span
             key={i}
-            className="absolute"
-            style={{ left: `${letter.fromIndex * 0.6}em` }}
+            className="absolute text-center"
+            style={{ 
+              width: `${letterWidth}rem`,
+              left: `${letter.fromPos * letterWidth}rem`,
+            }}
             animate={{
-              x: isDiscovery ? `${getOffset(letter.fromIndex, letter.toIndex)}em` : 0,
+              x: isDiscovery 
+                ? `${(letter.toPos - letter.fromPos) * letterWidth}rem` 
+                : 0,
             }}
             transition={{
-              duration: 0.6,
-              ease: "easeInOut",
-              delay: i * 0.03,
+              duration: 0.7,
+              ease: [0.4, 0, 0.2, 1],
+              delay: i * 0.04,
             }}
           >
-            {isDiscovery ? letter.toChar : letter.char}
+            {isDiscovery ? letter.toChar : letter.fromChar}
           </motion.span>
         ))}
       </span>
-      <span className="ml-1">your next adventure</span>
+      <span className="ml-2">of your next adventure</span>
     </p>
   )
 }
