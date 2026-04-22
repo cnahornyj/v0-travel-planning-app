@@ -355,30 +355,30 @@ export function PlaceSearch({
             </div>
           )}
 
-          <div className="max-h-[450px] space-y-3 overflow-y-auto">
-            {searchResults.map((place) => (
-              <Card
-                key={place.id}
-                className="cursor-pointer overflow-hidden transition-colors hover:bg-muted/50"
-                onClick={() => onPlaceSelect(place)}
-              >
-                <div className="flex gap-3">
+          <div className="max-h-[450px] overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3">
+              {searchResults.map((place) => (
+                <Card
+                  key={place.id}
+                  className="cursor-pointer overflow-hidden transition-colors hover:bg-muted/50"
+                  onClick={() => onPlaceSelect(place)}
+                >
                   {place.photos && place.photos.length > 0 && (
                     <img
                       src={place.photos[0] || "/placeholder.svg"}
                       alt={place.name}
-                      className="h-28 w-36 shrink-0 object-cover"
+                      className="h-36 w-full object-cover"
                     />
                   )}
                   
-                  <div className="flex flex-1 flex-col justify-center gap-1.5 py-2 pr-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h4 className="line-clamp-2 font-medium">{place.name}</h4>
+                  <div className="flex flex-col gap-1.5 p-3">
+                    <div className="flex items-start justify-between gap-1">
+                      <h4 className="line-clamp-2 text-sm font-medium">{place.name}</h4>
                       {trips.length > 0 && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="size-7 shrink-0 p-0"
+                          className="size-6 shrink-0 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             setTripSelectionPlace(place)
@@ -389,28 +389,28 @@ export function PlaceSearch({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="size-3 shrink-0" />
                       <span className="line-clamp-1">{place.address}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1">
                       {place.rating && (
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="text-xs">
                           <Star className="mr-1 size-3 fill-yellow-400 text-yellow-400" />
                           {place.rating}
                         </Badge>
                       )}
                       {place.isOpen !== undefined && (
-                        <Badge variant={place.isOpen ? "default" : "secondary"}>
+                        <Badge variant={place.isOpen ? "default" : "secondary"} className="text-xs">
                           {place.isOpen ? "Open" : "Closed"}
                         </Badge>
                       )}
                     </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
         </TabsContent>
 
