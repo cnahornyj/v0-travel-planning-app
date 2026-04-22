@@ -367,7 +367,6 @@ export function DestinationPage() {
               onLocationChange={(location) => setMapCenter({ lat: location.lat, lng: location.lng })}
               trips={[trip]}
               onAddPlaceToTrip={(tripId, place) => handleAddPlace(place)}
-              destinationName={trip.name}
             />
           </div>
         )}
