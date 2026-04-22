@@ -163,6 +163,7 @@ export function PlaceSearch({
   }, [destinationName, isLocationInitialized, isInitializing, onLocationChange])
 
   const searchPlaces = async (query: string, type?: string, location = currentLocation) => {
+    console.log("[v0] searchPlaces called with:", { query, type, location, isLocationInitialized })
     setIsLoading(true)
 
     try {
@@ -178,7 +179,9 @@ export function PlaceSearch({
         finalQuery = `${query} in ${location.name}`
       }
 
+      console.log("[v0] Final query:", finalQuery)
       const results = await clientTextSearch(finalQuery, { lat: location.lat, lng: location.lng })
+      console.log("[v0] Search results:", results.length)
       setSearchResults(results)
     } catch (error) {
       console.error("[v0] Error searching places:", error)
@@ -193,6 +196,7 @@ export function PlaceSearch({
   }
 
   const handleTypeSelect = (typeId: string) => {
+    console.log("[v0] handleTypeSelect called:", { typeId, currentLocation, isLocationInitialized })
     const newType = selectedType === typeId ? null : typeId
     setSelectedType(newType)
     searchPlaces(searchQuery, newType || undefined)
