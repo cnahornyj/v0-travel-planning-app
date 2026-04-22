@@ -33,10 +33,12 @@ export function AnimatedTagline() {
     return () => clearInterval(interval)
   }, [])
 
+  const staticText = " of your next adventure"
+
   return (
-    <p className="text-xl font-medium text-muted-foreground h-10 flex items-center justify-center tracking-wide">
+    <p className="text-xl font-medium text-muted-foreground h-10 flex items-center justify-center">
       <span 
-        className="relative inline-flex font-mono"
+        className="relative inline-flex"
         style={{ width: `${9 * letterWidth}rem` }}
       >
         {letters.map((letter, i) => (
@@ -62,7 +64,15 @@ export function AnimatedTagline() {
           </motion.span>
         ))}
       </span>
-      <span className="ml-2">of your next adventure</span>
+      {staticText.split("").map((char, i) => (
+        <span 
+          key={i} 
+          className="inline-block text-center"
+          style={{ width: char === " " ? "0.4rem" : `${letterWidth}rem` }}
+        >
+          {char}
+        </span>
+      ))}
     </p>
   )
 }
