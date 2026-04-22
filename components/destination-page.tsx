@@ -429,9 +429,9 @@ export function DestinationPage() {
                   {trip.places.length === 0 && (
                     <Button 
                       onClick={() => setShowPlaceSearch(!showPlaceSearch)}
-                      className={`mt-4 w-auto ${!showPlaceSearch ? "animate-slow-pulse" : ""}`}
+                      className="mt-4 w-auto"
                     >
-                      {showPlaceSearch ? "Close Search" : "Add Place"}
+                      {showPlaceSearch ? "Close Search" : "+ Add Place"}
                     </Button>
                   )}
                 </Card>
