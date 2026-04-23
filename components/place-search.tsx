@@ -40,7 +40,6 @@ function isNewPlacesApiAvailable(): boolean {
 
 // Convert a new Place API result to our Place type
 function newPlaceToPlace(place: any): Place {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""
   return {
     id: place.id || `place-${Math.random().toString(36).slice(2)}`,
     name: place.displayName || "Unknown Place",
@@ -52,7 +51,6 @@ function newPlaceToPlace(place: any): Place {
     photos: place.photos
       ? place.photos.slice(0, 5).map((photo: any) => photo.getURI({ maxWidth: 400 }))
       : [],
-    isOpen: place.isOpen?.(),
     website: place.websiteURI,
     phone: place.nationalPhoneNumber,
     openingHours: place.regularOpeningHours
@@ -111,7 +109,6 @@ export function PlaceSearch({
             "rating",
             "types",
             "photos",
-            "isOpen",
             "websiteURI",
             "nationalPhoneNumber",
             "regularOpeningHours",
