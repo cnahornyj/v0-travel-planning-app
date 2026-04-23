@@ -56,6 +56,7 @@ function newPlaceToPlace(place: any): Place {
     openingHours: place.regularOpeningHours
       ? { weekdayText: place.regularOpeningHours.weekdayDescriptions || [] }
       : undefined,
+    editorialSummary: place.editorialSummary,
   }
 }
 
@@ -112,6 +113,7 @@ export function PlaceSearch({
             "websiteURI",
             "nationalPhoneNumber",
             "regularOpeningHours",
+            "editorialSummary",
           ],
           maxResultCount: 10,
         }
@@ -411,10 +413,16 @@ export function PlaceSearch({
                       </div>
                     )}
 
-                    <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                       <MapPin className="mr-1 inline-block size-3" />
                       {place.address}
                     </p>
+
+                    {place.editorialSummary && (
+                      <p className="mt-1 line-clamp-2 text-xs italic text-muted-foreground">
+                        {place.editorialSummary}
+                      </p>
+                    )}
                   </div>
                 </Card>
               ))}
