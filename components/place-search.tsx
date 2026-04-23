@@ -356,47 +356,52 @@ export function PlaceSearch({
           )}
 
           <div className="max-h-[450px] overflow-y-auto">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {searchResults.map((place) => (
                 <Card
                   key={place.id}
-                  className="cursor-pointer overflow-hidden transition-colors hover:bg-muted/50"
+                  className="group flex h-44 cursor-pointer flex-row gap-0 overflow-hidden p-3 py-3 transition-shadow hover:shadow-lg"
                   onClick={() => onPlaceSelect(place)}
                 >
-                  {place.photos && place.photos.length > 0 && (
+                  <div className="relative h-full w-32 shrink-0 overflow-hidden rounded-xl">
                     <img
-                      src={place.photos[0] || "/placeholder.svg"}
+                      src={place.photos?.[0] || "/placeholder.svg?height=300&width=300"}
                       alt={place.name}
-                      className="aspect-square w-full object-cover"
+                      className="size-full object-cover"
                     />
-                  )}
-                  
-                  <div className="flex flex-col gap-1 p-2">
-                    <div className="flex items-start justify-between gap-1">
-                      <h4 className="line-clamp-2 text-xs font-medium">{place.name}</h4>
+                  </div>
+
+                  <div className="ml-4 flex min-w-0 flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="line-clamp-2 text-sm font-bold">{place.name}</h4>
                       {trips.length > 0 && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="size-5 shrink-0 p-0"
+                          className="size-7 shrink-0 p-0"
                           onClick={(e) => {
                             e.stopPropagation()
                             setTripSelectionPlace(place)
                           }}
                         >
-                          <PlusCircle className="size-3" />
+                          <PlusCircle className="size-4" />
                         </Button>
                       )}
                     </div>
 
                     {place.rating && (
-                      <div className="flex items-center gap-1">
-                        <Badge variant="secondary" className="px-1 py-0 text-[10px]">
-                          <Star className="mr-0.5 size-2.5 fill-yellow-400 text-yellow-400" />
+                      <div className="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary" className="px-1.5 py-0.5 text-xs">
+                          <Star className="mr-1 size-3 fill-yellow-400 text-yellow-400" />
                           {place.rating}
                         </Badge>
                       </div>
                     )}
+
+                    <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                      <MapPin className="mr-1 inline-block size-3" />
+                      {place.address}
+                    </p>
                   </div>
                 </Card>
               ))}
