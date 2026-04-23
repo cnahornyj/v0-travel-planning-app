@@ -33,27 +33,30 @@ const PLACE_TYPES = [
   { id: "shopping_mall", label: "Shopping", icon: "🛍️" },
 ]
 
-// Helper to get the PlacesService (client-side, requires google maps JS loaded)
-function getPlacesService(): any | null {
-  if (typeof window === "undefined" || !window.google?.maps?.places) return null
-  const div = document.createElement("div")
-  return new window.google.maps.places.PlacesService(div)
+// Check if the new Places API is available
+function isNewPlacesApiAvailable(): boolean {
+  return typeof window !== "undefined" && !!window.google?.maps?.places?.Place?.searchByText
 }
 
-// Convert a Google PlaceResult to our Place type
-function placeResultToPlace(result: any): Place {
+// Convert a new Place API result to our Place type
+function newPlaceToPlace(place: any): Place {
   return {
-    id: result.place_id || `place-${Math.random().toString(36).slice(2)}`,
-    name: result.name || "Unknown Place",
-    address: result.formatted_address || result.vicinity || "Address not available",
-    lat: result.geometry?.location?.lat() || 0,
-    lng: result.geometry?.location?.lng() || 0,
-    type: result.types?.[0],
-    rating: result.rating,
-    photos: result.photos
-      ? result.photos.slice(0, 5).map((photo: any) => photo.getUrl({ maxWidth: 400 }))
+    id: place.id || `place-${Math.random().toString(36).slice(2)}`,
+    name: place.displayName || "Unknown Place",
+    address: place.formattedAddress || "Address not available",
+    lat: place.location?.lat() || 0,
+    lng: place.location?.lng() || 0,
+    type: place.types?.[0],
+    rating: place.rating,
+    photos: place.photos
+      ? place.photos.slice(0, 5).map((photo: any) => photo.getURI({ maxWidth: 400 }))
       : [],
-    isOpen: result.opening_hours?.isOpen?.(),
+    website: place.websiteURI,
+    phone: place.nationalPhoneNumber,
+    openingHours: place.regularOpeningHours
+      ? { weekdayText: place.regularOpeningHours.weekdayDescriptions || [] }
+      : undefined,
+    editorialSummary: place.editorialSummary,
   }
 }
 
@@ -88,35 +91,47 @@ export function PlaceSearch({
   const [isInitialized, setIsInitialized] = useState(false)
   const [isInitializing, setIsInitializing] = useState(false)
 
-  // Client-side text search using the Google Maps JS SDK
+  // Client-side text search using the new Google Maps Places API
   const clientTextSearch = useCallback(
-    (query: string, location?: { lat: number; lng: number }): Promise<Place[]> => {
-      return new Promise((resolve) => {
-        const service = getPlacesService()
-        if (!service) {
-          console.error("[v0] Google Maps PlacesService not available")
-          resolve([])
-          return
-        }
+    async (query: string, location?: { lat: number; lng: number }): Promise<Place[]> => {
+      if (!isNewPlacesApiAvailable()) {
+        console.error("[v0] Google Maps Place.searchByText not available")
+        return []
+      }
 
+      try {
         const request: any = {
-          query,
-          ...(location && location.lat !== 0 && location.lng !== 0
-            ? {
-                location: new window.google.maps.LatLng(location.lat, location.lng),
-                radius: 50000,
-              }
-            : {}),
+          textQuery: query,
+          fields: [
+            "id",
+            "displayName",
+            "formattedAddress",
+            "location",
+            "rating",
+            "types",
+            "photos",
+            "websiteURI",
+            "nationalPhoneNumber",
+            "regularOpeningHours",
+            "editorialSummary",
+          ],
+          maxResultCount: 10,
         }
 
-        service.textSearch(request, (results: any[], status: string) => {
-          if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
-            resolve(results.slice(0, 10).map((r) => placeResultToPlace(r)))
-          } else {
-            resolve([])
+        // Add location bias if coordinates provided
+        if (location && location.lat !== 0 && location.lng !== 0) {
+          request.locationBias = {
+            center: { lat: location.lat, lng: location.lng },
+            radius: 50000,
           }
-        })
-      })
+        }
+
+        const { places } = await window.google.maps.places.Place.searchByText(request)
+        return (places || []).map((place: any) => newPlaceToPlace(place))
+      } catch (error) {
+        console.error("[v0] Error in Place.searchByText:", error)
+        return []
+      }
     },
     []
   )
@@ -398,10 +413,16 @@ export function PlaceSearch({
                       </div>
                     )}
 
-                    <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
                       <MapPin className="mr-1 inline-block size-3" />
                       {place.address}
                     </p>
+
+                    {place.editorialSummary && (
+                      <p className="mt-1 line-clamp-2 text-xs italic text-muted-foreground">
+                        {place.editorialSummary}
+                      </p>
+                    )}
                   </div>
                 </Card>
               ))}

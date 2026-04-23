@@ -17,35 +17,84 @@ export async function GET(request: Request) {
   }
 
   try {
-    let url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`
+    // Using Places API (New) - Text Search endpoint
+    const url = "https://places.googleapis.com/v1/places:searchText"
 
-    if (lat && lng) {
-      url += `&location=${lat},${lng}&radius=50000`
+    const requestBody: any = {
+      textQuery: query,
+      maxResultCount: 10,
     }
 
-    const response = await fetch(url)
+    // Add location bias if coordinates provided
+    if (lat && lng) {
+      requestBody.locationBias = {
+        circle: {
+          center: {
+            latitude: parseFloat(lat),
+            longitude: parseFloat(lng),
+          },
+          radius: 50000.0,
+        },
+      }
+    }
+
+    // Field mask is required for the new API - requesting fields we need
+    const fieldMask = [
+      "places.id",
+      "places.displayName",
+      "places.formattedAddress",
+      "places.location",
+      "places.rating",
+      "places.types",
+      "places.photos",
+      "places.currentOpeningHours",
+      "places.regularOpeningHours",
+      "places.websiteUri",
+      "places.nationalPhoneNumber",
+      "places.priceLevel",
+    ].join(",")
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": fieldMask,
+      },
+      body: JSON.stringify(requestBody),
+    })
+
     const data = await response.json()
 
-    if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-      console.error("[v0] Places search error:", data.status, data.error_message)
-      return NextResponse.json({ error: data.error_message || "Search failed" }, { status: 500 })
+    if (data.error) {
+      console.error("[v0] Places search error:", data.error)
+      return NextResponse.json({ error: data.error.message || "Search failed" }, { status: data.error.code || 500 })
     }
 
-    const places = (data.results || []).slice(0, 10).map((place: any) => ({
-      id: place.place_id || `place-${Math.random().toString(36).slice(2)}`,
-      name: place.name || "Unknown Place",
-      address: place.formatted_address || "Address not available",
-      lat: place.geometry?.location?.lat || 0,
-      lng: place.geometry?.location?.lng || 0,
+    const places = (data.places || []).map((place: any) => ({
+      id: place.id || `place-${Math.random().toString(36).slice(2)}`,
+      name: place.displayName?.text || "Unknown Place",
+      address: place.formattedAddress || "Address not available",
+      lat: place.location?.latitude || 0,
+      lng: place.location?.longitude || 0,
       type: place.types?.[0],
       rating: place.rating,
       photos: place.photos
         ? place.photos.slice(0, 5).map(
             (photo: any) =>
-              `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${photo.photo_reference}&key=${apiKey}`
+              `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=400&key=${apiKey}`
           )
         : [],
-      isOpen: place.opening_hours?.open_now,
+      isOpen: place.currentOpeningHours?.openNow,
+      // New API returns more details in search results
+      website: place.websiteUri,
+      phone: place.nationalPhoneNumber,
+      priceLevel: place.priceLevel,
+      openingHours: place.regularOpeningHours
+        ? {
+            weekdayText: place.regularOpeningHours.weekdayDescriptions || [],
+          }
+        : null,
     }))
 
     return NextResponse.json({ places })

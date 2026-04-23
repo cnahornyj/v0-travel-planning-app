@@ -42,6 +42,7 @@ export interface Place {
     text: string
     time: number
   }>
+  editorialSummary?: string
 }
 
 export interface ScheduledEvent {
