@@ -27,14 +27,10 @@ export function GooglePlacesAutocomplete({ onPlaceSelect }: GooglePlacesAutocomp
   const [notes, setNotes] = useState("")
 
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null)
-  const placesService = useRef<google.maps.places.PlacesService | null>(null)
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.google && window.google.maps && window.google.maps.places) {
       autocompleteService.current = new window.google.maps.places.AutocompleteService()
-
-      const div = document.createElement("div")
-      placesService.current = new window.google.maps.places.PlacesService(div)
     }
   }, [])
 
@@ -57,24 +53,42 @@ export function GooglePlacesAutocomplete({ onPlaceSelect }: GooglePlacesAutocomp
     })
   }
 
-  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
-    if (!placesService.current) return
+  const handleSelectPrediction = async (prediction: google.maps.places.AutocompletePrediction) => {
+    if (!window.google?.maps?.places?.Place) return
 
     setIsLoading(true)
-    placesService.current.getDetails({ placeId: prediction.place_id }, (place, status) => {
+    try {
+      // Use the new Place API instead of PlacesService
+      const place = new window.google.maps.places.Place({
+        id: prediction.place_id,
+      })
+      
+      await place.fetchFields({
+        fields: ["displayName", "formattedAddress", "location"],
+      })
+
+      setSelectedPlace({
+        name: place.displayName || prediction.structured_formatting.main_text,
+        address: place.formattedAddress || prediction.description,
+        placeId: prediction.place_id,
+        lat: place.location?.lat(),
+        lng: place.location?.lng(),
+      })
+      setInputValue(place.displayName || prediction.structured_formatting.main_text)
+      setPredictions([])
+    } catch (error) {
+      console.error("[v0] Error fetching place details:", error)
+      // Fallback to prediction data
+      setSelectedPlace({
+        name: prediction.structured_formatting.main_text,
+        address: prediction.description,
+        placeId: prediction.place_id,
+      })
+      setInputValue(prediction.structured_formatting.main_text)
+      setPredictions([])
+    } finally {
       setIsLoading(false)
-      if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
-        setSelectedPlace({
-          name: place.name || prediction.structured_formatting.main_text,
-          address: place.formatted_address || prediction.description,
-          placeId: prediction.place_id,
-          lat: place.geometry?.location?.lat(),
-          lng: place.geometry?.location?.lng(),
-        })
-        setInputValue(place.name || prediction.structured_formatting.main_text)
-        setPredictions([])
-      }
-    })
+    }
   }
 
   const handleAddPlace = () => {
