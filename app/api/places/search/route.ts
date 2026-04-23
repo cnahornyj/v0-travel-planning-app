@@ -66,6 +66,9 @@ export async function GET(request: Request) {
 
     const data = await response.json()
 
+    console.log("[v0] Places API response status:", response.status)
+    console.log("[v0] Places API raw response:", JSON.stringify(data, null, 2))
+
     if (data.error) {
       console.error("[v0] Places search error:", data.error)
       return NextResponse.json({ error: data.error.message || "Search failed" }, { status: data.error.code || 500 })
