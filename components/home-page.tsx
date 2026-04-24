@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Info, Plus, Trash2 } from "lucide-react"
+import { Plus } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 import { AnimatedTagline } from "@/components/ui/animated-tagline"
+import { DestinationCard } from "@/components/destination-card"
 import type { Trip } from "@/components/travel-planner"
 
 export function HomePage() {
@@ -93,11 +93,6 @@ export function HomePage() {
     }
   }
 
-  const getFirstImage = (trip: Trip) => {
-    const firstPlace = trip.places.find((place) => place.photos && place.photos.length > 0)
-    return firstPlace?.photos?.[0] || "/diverse-travel-destinations.png"
-  }
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -130,43 +125,16 @@ export function HomePage() {
 
         <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (
-            <Card
+            <DestinationCard
               key={trip.id}
-              className="group cursor-pointer overflow-hidden border border-border/50 bg-card p-0 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-border"
+              trip={trip}
               onClick={() => router.push(`/destinations/${trip.id}`)}
-            >
-              <div className="relative aspect-[4/3] overflow-hidden">
-                <img
-                  src={getFirstImage(trip) || "/placeholder.svg"}
-                  alt={trip.name}
-                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-              <div className="flex items-center justify-between px-4 py-2.5">
-                <h3 className="text-lg font-semibold text-foreground">{trip.name}</h3>
-                <div className="flex gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(`/destinations/${trip.id}`)
-                    }}
-                    className="size-9 rounded-full hover:bg-muted"
-                  >
-                    <Info className="size-4 text-muted-foreground" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={(e) => handleDeleteClick(e, trip)}
-                    className="size-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="size-4 text-muted-foreground" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
+              onInfoClick={(e) => {
+                e.stopPropagation()
+                router.push(`/destinations/${trip.id}`)
+              }}
+              onDeleteClick={(e) => handleDeleteClick(e, trip)}
+            />
           ))}
         </div>
 
