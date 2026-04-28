@@ -8,7 +8,7 @@ import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
 import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Ticket, ExternalLink } from "lucide-react"
-import type { Trip, Place, ScheduledEvent } from "./travel-planner"
+import type { Trip, Place, ScheduledEvent, TicketFile } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -173,6 +173,17 @@ export function DestinationPage() {
       setSelectedPlace((prev) => (prev ? { ...prev, ticketUrl: ticketUrl.trim() || undefined } : null))
     }
     setEditingTicketUrl(null)
+  }
+
+  const handleUpdateTicketFile = async (placeId: string, ticketFile: TicketFile | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, ticketFile } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, ticketFile } : null))
+    }
   }
 
   const handleUpdateEstimatedDuration = async (placeId: string, estimatedDuration: number | undefined) => {
@@ -701,6 +712,7 @@ export function DestinationPage() {
             onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
             onUpdatePrice={handleUpdatePrice}
             onUpdateTicketUrl={handleUpdateTicketUrl}
+            onUpdateTicketFile={handleUpdateTicketFile}
           />
         )}
       </div>

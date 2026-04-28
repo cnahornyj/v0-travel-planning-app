@@ -11,6 +11,7 @@ import {
   Clock,
   Trash2,
   AlertTriangle,
+  Ticket,
 } from "lucide-react"
 import type { Place, ScheduledEvent } from "./travel-planner"
 import { cn } from "@/lib/utils"
@@ -436,6 +437,9 @@ export function ScheduleSidebar({
                           <div className="flex items-center gap-1">
                             {!openingCheck.isOpen && (
                               <AlertTriangle className="size-3 shrink-0 text-amber-100" />
+                            )}
+                            {event.ticketFile && (
+                              <Ticket className="size-3 shrink-0 text-primary-foreground/80" title="Ticket attached" />
                             )}
                             <p className="truncate text-xs font-medium">
                               {event.place.name}
