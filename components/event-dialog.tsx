@@ -35,6 +35,8 @@ interface EventDialogProps {
   initialPlaceId?: string
   initialStartTime?: string
   editingEvent?: ScheduledEvent // If provided, we're editing an existing event
+  tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
+  tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
 }
 
 const DURATION_OPTIONS = [
@@ -141,6 +143,8 @@ export function EventDialog({
   initialPlaceId,
   initialStartTime,
   editingEvent,
+  tripStartDate,
+  tripEndDate,
 }: EventDialogProps) {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("")
   const [date, setDate] = useState<string>("")
@@ -151,6 +155,12 @@ export function EventDialog({
 
   const isEditing = !!editingEvent
   const todayStr = getTodayDateString()
+
+  // Determine min and max dates for the date picker
+  // If trip dates exist, constrain to those dates (but not before today)
+  const minDate = tripStartDate && tripStartDate > todayStr ? tripStartDate : todayStr
+  const maxDate = tripEndDate || undefined
+  const hasTripDateConstraints = !!(tripStartDate && tripEndDate)
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -165,7 +175,9 @@ export function EventDialog({
       } else {
         // Create mode
         setSelectedPlaceId(initialPlaceId || "")
-        setDate(initialDate || todayStr)
+        // Default to initialDate, or trip start date if it's in the future, or today
+        const defaultDate = initialDate || (tripStartDate && tripStartDate > todayStr ? tripStartDate : todayStr)
+        setDate(defaultDate)
         setStartTime(initialStartTime || "10:00")
         setDuration("120")
         setNotes("")
@@ -210,6 +222,16 @@ export function EventDialog({
     // Check if the event is in the past
     if (isInPast(date, startTime)) {
       setError("Cannot schedule events in the past")
+      return
+    }
+
+    // Check if date is within trip dates (if constraints exist)
+    if (tripStartDate && date < tripStartDate) {
+      setError(`Date must be on or after the trip start date (${new Date(tripStartDate).toLocaleDateString()})`)
+      return
+    }
+    if (tripEndDate && date > tripEndDate) {
+      setError(`Date must be on or before the trip end date (${new Date(tripEndDate).toLocaleDateString()})`)
       return
     }
 
@@ -281,12 +303,20 @@ export function EventDialog({
 
           {/* Date */}
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">
+              Date
+              {hasTripDateConstraints && (
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  ({new Date(tripStartDate!).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} - {new Date(tripEndDate!).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })})
+                </span>
+              )}
+            </Label>
             <Input
               id="date"
               type="date"
               value={date}
-              min={todayStr}
+              min={minDate}
+              max={maxDate}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>

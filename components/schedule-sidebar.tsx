@@ -24,6 +24,8 @@ interface ScheduleSidebarProps {
   onRemoveEvent: (eventId: string) => void
   onOpenEventDialog: (date?: string, placeId?: string, startTime?: string) => void
   onEditEvent: (event: ScheduledEvent) => void
+  tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
+  tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -167,6 +169,18 @@ function isTimeSlotInPast(date: Date, hour: number): boolean {
   return slotTime < now
 }
 
+// Check if a date is within trip date constraints
+function isDateWithinTripRange(date: Date, tripStartDate?: string, tripEndDate?: string): boolean {
+  if (!tripStartDate && !tripEndDate) return true // No constraints
+  
+  const dateKey = formatDateKey(date)
+  
+  if (tripStartDate && dateKey < tripStartDate) return false
+  if (tripEndDate && dateKey > tripEndDate) return false
+  
+  return true
+}
+
 export function ScheduleSidebar({
   isOpen,
   onClose,
@@ -175,10 +189,14 @@ export function ScheduleSidebar({
   onRemoveEvent,
   onOpenEventDialog,
   onEditEvent,
+  tripStartDate,
+  tripEndDate,
 }: ScheduleSidebarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  
+  const hasTripDateConstraints = !!(tripStartDate && tripEndDate)
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate])
 
@@ -221,6 +239,10 @@ export function ScheduleSidebar({
   const handleTimeSlotClick = (date: Date, hour: number) => {
     // Don't allow creating events in the past
     if (isTimeSlotInPast(date, hour)) {
+      return
+    }
+    // Don't allow creating events outside trip date range
+    if (!isDateWithinTripRange(date, tripStartDate, tripEndDate)) {
       return
     }
     const dateKey = formatDateKey(date)
