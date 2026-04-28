@@ -23,8 +23,11 @@ import {
   Euro,
   Ticket,
   ExternalLink,
+  Upload,
+  FileText,
+  Download,
 } from "lucide-react"
-import type { Place, Trip } from "./travel-planner"
+import type { Place, Trip, TicketFile } from "./travel-planner"
 
 interface PlaceDetailsProps {
   place: Place
@@ -39,6 +42,7 @@ interface PlaceDetailsProps {
   onUpdateEstimatedDuration?: (placeId: string, duration: number | undefined) => void
   onUpdatePrice?: (placeId: string, price: string | undefined) => void
   onUpdateTicketUrl?: (placeId: string, ticketUrl: string) => void
+  onUpdateTicketFile?: (placeId: string, ticketFile: TicketFile | undefined) => void
 }
 
 export function PlaceDetails({
@@ -54,6 +58,7 @@ export function PlaceDetails({
   onUpdateEstimatedDuration,
   onUpdatePrice,
   onUpdateTicketUrl,
+  onUpdateTicketFile,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -74,6 +79,7 @@ export function PlaceDetails({
   const [priceValue, setPriceValue] = useState(detailedPlace.price || "")
   const [isEditingTicketUrl, setIsEditingTicketUrl] = useState(false)
   const [ticketUrlValue, setTicketUrlValue] = useState(detailedPlace.ticketUrl || "")
+  const [isUploadingTicketFile, setIsUploadingTicketFile] = useState(false)
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -180,6 +186,51 @@ export function PlaceDetails({
     } catch (error) {
       console.error("[v0] Error saving ticket URL:", error)
     }
+  }
+
+  const handleTicketFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !onUpdateTicketFile) return
+
+    // Limit file size to 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Le fichier est trop volumineux. La taille maximale est de 5 Mo.")
+      return
+    }
+
+    setIsUploadingTicketFile(true)
+
+    try {
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const dataUrl = e.target?.result as string
+        const ticketFile: TicketFile = {
+          name: file.name,
+          type: file.type,
+          dataUrl,
+          uploadedAt: new Date().toISOString(),
+        }
+
+        setDetailedPlace((prev) => ({ ...prev, ticketFile }))
+        await onUpdateTicketFile(detailedPlace.id, ticketFile)
+        setIsUploadingTicketFile(false)
+      }
+      reader.onerror = () => {
+        console.error("[v0] Error reading file")
+        setIsUploadingTicketFile(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("[v0] Error uploading ticket file:", error)
+      setIsUploadingTicketFile(false)
+    }
+  }
+
+  const handleRemoveTicketFile = async () => {
+    if (!onUpdateTicketFile) return
+
+    setDetailedPlace((prev) => ({ ...prev, ticketFile: undefined }))
+    await onUpdateTicketFile(detailedPlace.id, undefined)
   }
 
   const handleUpdateOpeningHours = async () => {
@@ -807,6 +858,68 @@ export function PlaceDetails({
                   >
                     <X className="size-4" />
                   </Button>
+                </div>
+              )}
+
+              {/* Ticket File Upload Section */}
+              {onUpdateTicketFile && (
+                <div className="mt-3 space-y-2 border-t pt-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <FileText className="size-4" />
+                    <span>Fichier de billet</span>
+                  </div>
+                  
+                  {detailedPlace.ticketFile ? (
+                    <div className="flex items-center justify-between rounded-md border bg-muted/30 p-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <FileText className="size-4 shrink-0 text-primary" />
+                        <span className="truncate text-sm">{detailedPlace.ticketFile.name}</span>
+                      </div>
+                      <div className="flex shrink-0 gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => {
+                            const link = document.createElement("a")
+                            link.href = detailedPlace.ticketFile!.dataUrl
+                            link.download = detailedPlace.ticketFile!.name
+                            link.click()
+                          }}
+                          title="Telecharger"
+                        >
+                          <Download className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={handleRemoveTicketFile}
+                          title="Supprimer"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed p-3 text-sm text-muted-foreground transition-colors hover:border-primary hover:bg-muted/30">
+                      {isUploadingTicketFile ? (
+                        <span>Chargement...</span>
+                      ) : (
+                        <>
+                          <Upload className="size-4" />
+                          <span>Importer un fichier (PDF, image, max 5 Mo)</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        onChange={handleTicketFileUpload}
+                        className="hidden"
+                        disabled={isUploadingTicketFile}
+                      />
+                    </label>
+                  )}
                 </div>
               )}
             </div>

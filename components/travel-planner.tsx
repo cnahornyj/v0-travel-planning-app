@@ -9,6 +9,13 @@ import { PlaceDetails } from "./place-details"
 import { Button } from "@/components/ui/button"
 import { Search, Calendar, Download, Upload } from "lucide-react"
 
+export interface TicketFile {
+  name: string
+  type: string
+  dataUrl: string
+  uploadedAt: string
+}
+
 export interface Place {
   id: string
   name: string
@@ -24,6 +31,7 @@ export interface Place {
   estimatedDuration?: number // in minutes
   price?: string // free-text price field, e.g. "15€", "Gratuit", "10-20€"
   ticketUrl?: string // booking/ticket link
+  ticketFile?: TicketFile // uploaded ticket file (PDF, image, etc.)
   visitPreference?: "morning" | "afternoon" | "evening" | "night" | "anytime"
   phone?: string
   website?: string
@@ -52,6 +60,7 @@ export interface ScheduledEvent {
   startTime: string // 24h format (e.g., "10:00")
   duration: number // in minutes
   notes?: string
+  ticketFile?: TicketFile // inherited from place or uploaded directly
 }
 
 export interface Trip {

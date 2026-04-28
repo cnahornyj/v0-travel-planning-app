@@ -8,7 +8,7 @@ import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
 import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Ticket, ExternalLink } from "lucide-react"
-import type { Trip, Place, ScheduledEvent } from "./travel-planner"
+import type { Trip, Place, ScheduledEvent, TicketFile } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
 import { Badge } from "@/components/ui/badge"
@@ -175,6 +175,17 @@ export function DestinationPage() {
     setEditingTicketUrl(null)
   }
 
+  const handleUpdateTicketFile = async (placeId: string, ticketFile: TicketFile | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, ticketFile } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, ticketFile } : null))
+    }
+  }
+
   const handleUpdateEstimatedDuration = async (placeId: string, estimatedDuration: number | undefined) => {
     if (!trip) return
 
@@ -326,8 +337,20 @@ export function DestinationPage() {
           <VeryDiscoLogo size="sm" />
           <div className="h-6 w-px bg-white/30" />
           <div>
-            <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
-            {trip.description && <p className="text-sm text-white/80">{trip.description}</p>}
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
+              {trip.startDate && trip.endDate && (
+                <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
+                  <Calendar className="size-3.5" />
+                  <span>
+                    {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    {' - '}
+                    {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+            </div>
+            {trip.description && <p className="mt-1 text-sm text-white/80">{trip.description}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -689,6 +712,7 @@ export function DestinationPage() {
             onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
             onUpdatePrice={handleUpdatePrice}
             onUpdateTicketUrl={handleUpdateTicketUrl}
+            onUpdateTicketFile={handleUpdateTicketFile}
           />
         )}
       </div>
@@ -703,6 +727,8 @@ export function DestinationPage() {
         onRemoveEvent={handleRemoveScheduledEvent}
         onOpenEventDialog={handleOpenEventDialog}
         onEditEvent={handleEditEvent}
+        tripStartDate={trip.startDate}
+        tripEndDate={trip.endDate}
       />
 
       {/* Event Creation Dialog */}
@@ -719,6 +745,8 @@ export function DestinationPage() {
         initialPlaceId={eventDialogInitialPlaceId}
         initialStartTime={eventDialogInitialStartTime}
         editingEvent={editingEvent}
+        tripStartDate={trip.startDate}
+        tripEndDate={trip.endDate}
       />
     </div>
   )

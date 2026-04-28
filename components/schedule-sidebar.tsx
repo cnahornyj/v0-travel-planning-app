@@ -11,6 +11,7 @@ import {
   Clock,
   Trash2,
   AlertTriangle,
+  Ticket,
 } from "lucide-react"
 import type { Place, ScheduledEvent } from "./travel-planner"
 import { cn } from "@/lib/utils"
@@ -24,6 +25,8 @@ interface ScheduleSidebarProps {
   onRemoveEvent: (eventId: string) => void
   onOpenEventDialog: (date?: string, placeId?: string, startTime?: string) => void
   onEditEvent: (event: ScheduledEvent) => void
+  tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
+  tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -167,6 +170,18 @@ function isTimeSlotInPast(date: Date, hour: number): boolean {
   return slotTime < now
 }
 
+// Check if a date is within trip date constraints
+function isDateWithinTripRange(date: Date, tripStartDate?: string, tripEndDate?: string): boolean {
+  if (!tripStartDate && !tripEndDate) return true // No constraints
+  
+  const dateKey = formatDateKey(date)
+  
+  if (tripStartDate && dateKey < tripStartDate) return false
+  if (tripEndDate && dateKey > tripEndDate) return false
+  
+  return true
+}
+
 export function ScheduleSidebar({
   isOpen,
   onClose,
@@ -175,10 +190,14 @@ export function ScheduleSidebar({
   onRemoveEvent,
   onOpenEventDialog,
   onEditEvent,
+  tripStartDate,
+  tripEndDate,
 }: ScheduleSidebarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  
+  const hasTripDateConstraints = !!(tripStartDate && tripEndDate)
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate])
 
@@ -221,6 +240,10 @@ export function ScheduleSidebar({
   const handleTimeSlotClick = (date: Date, hour: number) => {
     // Don't allow creating events in the past
     if (isTimeSlotInPast(date, hour)) {
+      return
+    }
+    // Don't allow creating events outside trip date range
+    if (!isDateWithinTripRange(date, tripStartDate, tripEndDate)) {
       return
     }
     const dateKey = formatDateKey(date)
@@ -290,6 +313,7 @@ export function ScheduleSidebar({
         {/* Day columns */}
         {weekDates.map((date) => {
           const isToday = isSameDay(date, today)
+          const isOutsideTripRange = !isDateWithinTripRange(date, tripStartDate, tripEndDate)
           const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
           
           return (
@@ -297,7 +321,8 @@ export function ScheduleSidebar({
               key={formatDateKey(date)}
               className={cn(
                 "flex-1 border-r py-2 text-center last:border-r-0",
-                isToday && "bg-primary/5"
+                isToday && "bg-primary/5",
+                isOutsideTripRange && "bg-muted/20 opacity-50"
               )}
             >
               <div className="text-xs text-muted-foreground">
@@ -351,12 +376,14 @@ export function ScheduleSidebar({
                 {/* Hour slots */}
                 {HOURS.map((hour) => {
                   const isPast = isTimeSlotInPast(date, hour)
+                  const isOutsideTripRange = !isDateWithinTripRange(date, tripStartDate, tripEndDate)
+                  const isDisabled = isPast || isOutsideTripRange
                   return (
                     <div
                       key={hour}
                       className={cn(
                         "border-b transition-colors",
-                        isPast 
+                        isDisabled
                           ? "cursor-not-allowed bg-muted/30" 
                           : "cursor-pointer hover:bg-accent/50"
                       )}
@@ -410,6 +437,9 @@ export function ScheduleSidebar({
                           <div className="flex items-center gap-1">
                             {!openingCheck.isOpen && (
                               <AlertTriangle className="size-3 shrink-0 text-amber-100" />
+                            )}
+                            {event.ticketFile && (
+                              <Ticket className="size-3 shrink-0 text-primary-foreground/80" title="Ticket attached" />
                             )}
                             <p className="truncate text-xs font-medium">
                               {event.place.name}

@@ -21,9 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Calendar, Clock, MapPin, AlertTriangle } from "lucide-react"
+import { Calendar, Clock, MapPin, AlertTriangle, FileText, Download, Ticket } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { Place, ScheduledEvent } from "./travel-planner"
+import type { Place, ScheduledEvent, TicketFile } from "./travel-planner"
 
 interface EventDialogProps {
   isOpen: boolean
@@ -35,6 +35,8 @@ interface EventDialogProps {
   initialPlaceId?: string
   initialStartTime?: string
   editingEvent?: ScheduledEvent // If provided, we're editing an existing event
+  tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
+  tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
 }
 
 const DURATION_OPTIONS = [
@@ -141,6 +143,8 @@ export function EventDialog({
   initialPlaceId,
   initialStartTime,
   editingEvent,
+  tripStartDate,
+  tripEndDate,
 }: EventDialogProps) {
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("")
   const [date, setDate] = useState<string>("")
@@ -151,6 +155,12 @@ export function EventDialog({
 
   const isEditing = !!editingEvent
   const todayStr = getTodayDateString()
+
+  // Determine min and max dates for the date picker
+  // If trip dates exist, constrain to those dates (but not before today)
+  const minDate = tripStartDate && tripStartDate > todayStr ? tripStartDate : todayStr
+  const maxDate = tripEndDate || undefined
+  const hasTripDateConstraints = !!(tripStartDate && tripEndDate)
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -165,7 +175,9 @@ export function EventDialog({
       } else {
         // Create mode
         setSelectedPlaceId(initialPlaceId || "")
-        setDate(initialDate || todayStr)
+        // Default to initialDate, or trip start date if it's in the future, or today
+        const defaultDate = initialDate || (tripStartDate && tripStartDate > todayStr ? tripStartDate : todayStr)
+        setDate(defaultDate)
         setStartTime(initialStartTime || "10:00")
         setDuration("120")
         setNotes("")
@@ -213,12 +225,24 @@ export function EventDialog({
       return
     }
 
+    // Check if date is within trip dates (if constraints exist)
+    if (tripStartDate && date < tripStartDate) {
+      setError(`Date must be on or after the trip start date (${new Date(tripStartDate).toLocaleDateString()})`)
+      return
+    }
+    if (tripEndDate && date > tripEndDate) {
+      setError(`Date must be on or before the trip end date (${new Date(tripEndDate).toLocaleDateString()})`)
+      return
+    }
+
     const eventData = {
       placeId: selectedPlaceId,
       date,
       startTime,
       duration: parseInt(duration, 10),
       notes: notes.trim() || undefined,
+      // Inherit ticket file from the place if it exists
+      ticketFile: selectedPlace?.ticketFile,
     }
 
     if (isEditing && editingEvent && onUpdate) {
@@ -281,12 +305,20 @@ export function EventDialog({
 
           {/* Date */}
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">
+              Date
+              {hasTripDateConstraints && (
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
+                  ({new Date(tripStartDate!).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} - {new Date(tripEndDate!).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })})
+                </span>
+              )}
+            </Label>
             <Input
               id="date"
               type="date"
               value={date}
-              min={todayStr}
+              min={minDate}
+              max={maxDate}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
@@ -371,6 +403,39 @@ export function EventDialog({
               <AlertTriangle className="size-4 text-amber-600" />
               <AlertDescription>{openingHoursInfo.warning}</AlertDescription>
             </Alert>
+          )}
+
+          {/* Ticket File Display */}
+          {selectedPlace?.ticketFile && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1 text-xs">
+                <Ticket className="size-3" />
+                Attached Ticket
+              </Label>
+              <div className="flex items-center justify-between rounded-md border bg-muted/30 p-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FileText className="size-4 shrink-0 text-primary" />
+                  <span className="truncate text-sm">{selectedPlace.ticketFile.name}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    const link = document.createElement("a")
+                    link.href = selectedPlace.ticketFile!.dataUrl
+                    link.download = selectedPlace.ticketFile!.name
+                    link.click()
+                  }}
+                >
+                  <Download className="mr-1 size-3.5" />
+                  Download
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                This ticket will be attached to the calendar event.
+              </p>
+            </div>
           )}
 
           {/* Notes */}
