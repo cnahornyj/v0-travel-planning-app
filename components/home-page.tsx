@@ -27,6 +27,8 @@ export function HomePage() {
   })
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [tripToDelete, setTripToDelete] = useState<Trip | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [tripToEdit, setTripToEdit] = useState<Trip | null>(null)
 
   useEffect(() => {
     const loadTrips = async () => {
@@ -72,6 +74,40 @@ export function HomePage() {
     e.stopPropagation()
     setTripToDelete(trip)
     setDeleteDialogOpen(true)
+  }
+
+  const handleEditClick = (e: React.MouseEvent, trip: Trip) => {
+    e.stopPropagation()
+    setTripToEdit(trip)
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateTrip = async () => {
+    if (!tripToEdit) return
+
+    try {
+      const response = await fetch(`/api/trips/${tripToEdit.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tripToEdit.name,
+          description: tripToEdit.description,
+          startDate: tripToEdit.startDate,
+          endDate: tripToEdit.endDate,
+        }),
+      })
+
+      if (response.ok) {
+        setTrips((prev) =>
+          prev.map((t) => (t.id === tripToEdit.id ? tripToEdit : t))
+        )
+      }
+    } catch (error) {
+      console.error("Error updating trip:", error)
+    } finally {
+      setEditDialogOpen(false)
+      setTripToEdit(null)
+    }
   }
 
   const handleConfirmDelete = async () => {
@@ -133,6 +169,7 @@ export function HomePage() {
                 e.stopPropagation()
                 router.push(`/destinations/${trip.id}`)
               }}
+              onEditClick={(e) => handleEditClick(e, trip)}
               onDeleteClick={(e) => handleDeleteClick(e, trip)}
             />
           ))}
@@ -212,6 +249,64 @@ export function HomePage() {
               Delete
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Destination</DialogTitle>
+          </DialogHeader>
+          {tripToEdit && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Destination Name</Label>
+                <Input
+                  id="edit-name"
+                  value={tripToEdit.name}
+                  onChange={(e) => setTripToEdit({ ...tripToEdit, name: e.target.value })}
+                  placeholder="e.g., Tokyo Adventure"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description (Optional)</Label>
+                <Textarea
+                  id="edit-description"
+                  value={tripToEdit.description || ""}
+                  onChange={(e) => setTripToEdit({ ...tripToEdit, description: e.target.value })}
+                  placeholder="Describe your trip..."
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-startDate">Start Date</Label>
+                  <Input
+                    id="edit-startDate"
+                    type="date"
+                    value={tripToEdit.startDate || ""}
+                    onChange={(e) => setTripToEdit({ ...tripToEdit, startDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-endDate">End Date</Label>
+                  <Input
+                    id="edit-endDate"
+                    type="date"
+                    value={tripToEdit.endDate || ""}
+                    onChange={(e) => setTripToEdit({ ...tripToEdit, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateTrip} disabled={!tripToEdit.name}>
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

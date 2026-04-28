@@ -3,17 +3,18 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Info, Trash2, Calendar } from "lucide-react"
+import { Info, Trash2, Calendar, Pencil } from "lucide-react"
 import type { Trip } from "@/components/travel-planner"
 
 interface DestinationCardProps {
   trip: Trip
   onClick: () => void
   onInfoClick: (e: React.MouseEvent) => void
+  onEditClick: (e: React.MouseEvent) => void
   onDeleteClick: (e: React.MouseEvent) => void
 }
 
-export function DestinationCard({ trip, onClick, onInfoClick, onDeleteClick }: DestinationCardProps) {
+export function DestinationCard({ trip, onClick, onInfoClick, onEditClick, onDeleteClick }: DestinationCardProps) {
   const [isHovering, setIsHovering] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
@@ -109,22 +110,33 @@ export function DestinationCard({ trip, onClick, onInfoClick, onDeleteClick }: D
             </div>
           )}
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-1">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onEditClick}
+            className="size-8 rounded-full hover:bg-muted"
+            title="Edit destination"
+          >
+            <Pencil className="size-3.5 text-muted-foreground" />
+          </Button>
           <Button
             size="icon"
             variant="ghost"
             onClick={onInfoClick}
-            className="size-9 rounded-full hover:bg-muted"
+            className="size-8 rounded-full hover:bg-muted"
+            title="View details"
           >
-            <Info className="size-4 text-muted-foreground" />
+            <Info className="size-3.5 text-muted-foreground" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
             onClick={onDeleteClick}
-            className="size-9 rounded-full hover:bg-destructive/10 hover:text-destructive"
+            className="size-8 rounded-full hover:bg-destructive/10 hover:text-destructive"
+            title="Delete destination"
           >
-            <Trash2 className="size-4 text-muted-foreground" />
+            <Trash2 className="size-3.5 text-muted-foreground" />
           </Button>
         </div>
       </div>
