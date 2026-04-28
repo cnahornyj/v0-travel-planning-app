@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Info, Trash2 } from "lucide-react"
+import { Info, Trash2, Calendar } from "lucide-react"
 import type { Trip } from "@/components/travel-planner"
 
 interface DestinationCardProps {
@@ -96,8 +96,20 @@ export function DestinationCard({ trip, onClick, onInfoClick, onDeleteClick }: D
       </div>
       
       <div className="flex items-center justify-between px-4 py-2.5">
-        <h3 className="text-lg font-semibold text-foreground">{trip.name}</h3>
-        <div className="flex gap-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-lg font-semibold text-foreground">{trip.name}</h3>
+          {trip.startDate && trip.endDate && (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Calendar className="size-3" />
+              <span>
+                {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                {' - '}
+                {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="flex shrink-0 gap-2">
           <Button
             size="icon"
             variant="ghost"

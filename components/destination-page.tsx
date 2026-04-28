@@ -326,8 +326,20 @@ export function DestinationPage() {
           <VeryDiscoLogo size="sm" />
           <div className="h-6 w-px bg-white/30" />
           <div>
-            <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
-            {trip.description && <p className="text-sm text-white/80">{trip.description}</p>}
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
+              {trip.startDate && trip.endDate && (
+                <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
+                  <Calendar className="size-3.5" />
+                  <span>
+                    {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    {' - '}
+                    {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              )}
+            </div>
+            {trip.description && <p className="mt-1 text-sm text-white/80">{trip.description}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
