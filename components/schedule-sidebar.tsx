@@ -312,6 +312,7 @@ export function ScheduleSidebar({
         {/* Day columns */}
         {weekDates.map((date) => {
           const isToday = isSameDay(date, today)
+          const isOutsideTripRange = !isDateWithinTripRange(date, tripStartDate, tripEndDate)
           const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
           
           return (
@@ -319,7 +320,8 @@ export function ScheduleSidebar({
               key={formatDateKey(date)}
               className={cn(
                 "flex-1 border-r py-2 text-center last:border-r-0",
-                isToday && "bg-primary/5"
+                isToday && "bg-primary/5",
+                isOutsideTripRange && "bg-muted/20 opacity-50"
               )}
             >
               <div className="text-xs text-muted-foreground">
@@ -373,12 +375,14 @@ export function ScheduleSidebar({
                 {/* Hour slots */}
                 {HOURS.map((hour) => {
                   const isPast = isTimeSlotInPast(date, hour)
+                  const isOutsideTripRange = !isDateWithinTripRange(date, tripStartDate, tripEndDate)
+                  const isDisabled = isPast || isOutsideTripRange
                   return (
                     <div
                       key={hour}
                       className={cn(
                         "border-b transition-colors",
-                        isPast 
+                        isDisabled
                           ? "cursor-not-allowed bg-muted/30" 
                           : "cursor-pointer hover:bg-accent/50"
                       )}

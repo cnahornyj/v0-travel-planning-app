@@ -715,6 +715,8 @@ export function DestinationPage() {
         onRemoveEvent={handleRemoveScheduledEvent}
         onOpenEventDialog={handleOpenEventDialog}
         onEditEvent={handleEditEvent}
+        tripStartDate={trip.startDate}
+        tripEndDate={trip.endDate}
       />
 
       {/* Event Creation Dialog */}
@@ -731,6 +733,8 @@ export function DestinationPage() {
         initialPlaceId={eventDialogInitialPlaceId}
         initialStartTime={eventDialogInitialStartTime}
         editingEvent={editingEvent}
+        tripStartDate={trip.startDate}
+        tripEndDate={trip.endDate}
       />
     </div>
   )
