@@ -30,7 +30,6 @@ export interface Place {
   tags?: string[]
   estimatedDuration?: number // in minutes
   price?: string // free-text price field, e.g. "15€", "Gratuit", "10-20€"
-  ticketUrl?: string // booking/ticket link
   ticketFile?: TicketFile // uploaded ticket file (PDF, image, etc.)
   visitPreference?: "morning" | "afternoon" | "evening" | "night" | "anytime"
   phone?: string

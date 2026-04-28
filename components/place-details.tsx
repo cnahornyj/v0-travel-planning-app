@@ -21,8 +21,6 @@ import {
   Check,
   Clock,
   Euro,
-  Ticket,
-  ExternalLink,
   Upload,
   FileText,
   Download,
@@ -41,7 +39,6 @@ interface PlaceDetailsProps {
   onUpdateName?: (placeId: string, name: string) => void
   onUpdateEstimatedDuration?: (placeId: string, duration: number | undefined) => void
   onUpdatePrice?: (placeId: string, price: string | undefined) => void
-  onUpdateTicketUrl?: (placeId: string, ticketUrl: string) => void
   onUpdateTicketFile?: (placeId: string, ticketFile: TicketFile | undefined) => void
 }
 
@@ -57,7 +54,6 @@ export function PlaceDetails({
   onUpdateName,
   onUpdateEstimatedDuration,
   onUpdatePrice,
-  onUpdateTicketUrl,
   onUpdateTicketFile,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
@@ -77,8 +73,6 @@ export function PlaceDetails({
   const [durationValue, setDurationValue] = useState(detailedPlace.estimatedDuration?.toString() || "")
   const [isEditingPrice, setIsEditingPrice] = useState(false)
   const [priceValue, setPriceValue] = useState(detailedPlace.price || "")
-  const [isEditingTicketUrl, setIsEditingTicketUrl] = useState(false)
-  const [ticketUrlValue, setTicketUrlValue] = useState(detailedPlace.ticketUrl || "")
   const [isUploadingTicketFile, setIsUploadingTicketFile] = useState(false)
 
   useEffect(() => {
@@ -171,20 +165,6 @@ export function PlaceDetails({
       setIsEditingWebsite(false)
     } catch (error) {
       console.error("[v0] Error saving website URL:", error)
-    }
-  }
-
-  const handleUpdateTicketUrl = async () => {
-    if (!onUpdateTicketUrl) return
-
-    const trimmedUrl = ticketUrlValue.trim()
-    setDetailedPlace((prev) => ({ ...prev, ticketUrl: trimmedUrl || undefined }))
-
-    try {
-      await onUpdateTicketUrl(detailedPlace.id, trimmedUrl)
-      setIsEditingTicketUrl(false)
-    } catch (error) {
-      console.error("[v0] Error saving ticket URL:", error)
     }
   }
 
@@ -791,69 +771,6 @@ export function PlaceDetails({
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsEditingWebsite(false)}
-                    className="flex-shrink-0"
-                  >
-                    <X className="size-4" />
-                  </Button>
-                </div>
-              )}
-
-              {!isEditingTicketUrl ? (
-                <div className="flex items-center justify-between gap-2">
-                  {detailedPlace.ticketUrl ? (
-                    <a
-                      href={detailedPlace.ticketUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <Ticket className="size-4" />
-                      <span className="truncate">{detailedPlace.ticketUrl.replace(/^https?:\/\/(www\.)?/, "")}</span>
-                      <ExternalLink className="size-3 shrink-0" />
-                    </a>
-                  ) : (
-                    <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Ticket className="size-4" />
-                      Aucun lien de billet
-                    </span>
-                  )}
-                  {onUpdateTicketUrl && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => {
-                        setTicketUrlValue(detailedPlace.ticketUrl || "")
-                        setIsEditingTicketUrl(true)
-                      }}
-                    >
-                      <Edit2 className="size-3" />
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    placeholder="Entrez l'URL du billet (https://...)"
-                    value={ticketUrlValue}
-                    onChange={(e) => setTicketUrlValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUpdateTicketUrl()
-                      } else if (e.key === "Escape") {
-                        setIsEditingTicketUrl(false)
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleUpdateTicketUrl} size="icon" className="flex-shrink-0">
-                    <Check className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsEditingTicketUrl(false)}
                     className="flex-shrink-0"
                   >
                     <X className="size-4" />
