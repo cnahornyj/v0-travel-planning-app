@@ -70,6 +70,7 @@ export interface Trip {
   endDate?: string
   places: Place[]
   scheduledEvents?: ScheduledEvent[]
+  tagColors?: Record<string, string>
   createdAt: string
 }
 

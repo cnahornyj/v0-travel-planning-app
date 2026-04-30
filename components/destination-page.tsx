@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
+import { TripSummary } from "./trip-summary"
 
 export function DestinationPage() {
   const params = useParams()
@@ -79,9 +80,6 @@ export function DestinationPage() {
 
   const handleAddPlace = async (place: Place) => {
     if (!trip) return
-
-    console.log("[v0] handleAddPlace called with place:", place)
-    console.log("[v0] Place data - name:", place.name, "address:", place.address, "photos:", place.photos?.length)
 
     const updatedPlaces = [...trip.places, place]
     await updateTrip({ places: updatedPlaces })
@@ -288,6 +286,34 @@ export function DestinationPage() {
     setPlaceToDelete(place)
   }
 
+  const handleUpdateTagColor = async (tag: string, color: string) => {
+    if (!trip) return
+
+    const updatedTagColors = {
+      ...(trip.tagColors || {}),
+      [tag]: color,
+    }
+    await updateTrip({ tagColors: updatedTagColors })
+  }
+
+  const handleDeleteTag = async (tagToDelete: string) => {
+    if (!trip) return
+
+    // Remove tag from all places
+    const updatedPlaces = trip.places.map((place) => ({
+      ...place,
+      tags: place.tags?.filter((t) => t !== tagToDelete),
+    }))
+
+    // Remove tag color
+    const { [tagToDelete]: _, ...remainingTagColors } = trip.tagColors || {}
+
+    await updateTrip({
+      places: updatedPlaces,
+      tagColors: remainingTagColors,
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -384,6 +410,16 @@ export function DestinationPage() {
 
         <div className="flex min-h-0 flex-1 overflow-auto p-6">
           <div className="mx-auto w-full max-w-6xl space-y-6">
+            {/* Trip Summary Section */}
+            {trip.places.length > 0 && (
+              <TripSummary
+                trip={trip}
+                tagColors={trip.tagColors || {}}
+                onUpdateTagColor={handleUpdateTagColor}
+                onDeleteTag={handleDeleteTag}
+              />
+            )}
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">
@@ -415,16 +451,29 @@ export function DestinationPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {allTags.map((tag) => (
-                        <Badge
-                          key={tag}
-                          variant={selectedTags.includes(tag) ? "default" : "outline"}
-                          className="cursor-pointer"
-                          onClick={() => toggleTag(tag)}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
+                      {allTags.map((tag) => {
+                        const tagColor = trip.tagColors?.[tag]
+                        return (
+                          <Badge
+                            key={tag}
+                            variant={selectedTags.includes(tag) ? "default" : "outline"}
+                            className="cursor-pointer gap-1.5"
+                            onClick={() => toggleTag(tag)}
+                            style={tagColor && !selectedTags.includes(tag) ? {
+                              borderColor: tagColor,
+                              color: tagColor,
+                            } : undefined}
+                          >
+                            {tagColor && (
+                              <span
+                                className="size-2 rounded-full"
+                                style={{ backgroundColor: tagColor }}
+                              />
+                            )}
+                            {tag}
+                          </Badge>
+                        )
+                      })}
                     </div>
                   </div>
                 </Card>
@@ -587,11 +636,29 @@ export function DestinationPage() {
 
                         {place.tags && place.tags.length > 0 && (
                           <div className="mt-auto flex flex-wrap gap-1 pt-1">
-                            {place.tags.slice(0, 3).map((tag) => (
-                              <Badge key={tag} variant="secondary" className="px-1.5 py-0 text-[10px]">
-                                {tag}
-                              </Badge>
-                            ))}
+                            {place.tags.slice(0, 3).map((tag) => {
+                              const tagColor = trip.tagColors?.[tag]
+                              return (
+                                <Badge 
+                                  key={tag} 
+                                  variant="secondary" 
+                                  className="gap-1 px-1.5 py-0 text-[10px]"
+                                  style={tagColor ? {
+                                    backgroundColor: `${tagColor}20`,
+                                    color: tagColor,
+                                    borderColor: tagColor,
+                                  } : undefined}
+                                >
+                                  {tagColor && (
+                                    <span
+                                      className="size-1.5 rounded-full"
+                                      style={{ backgroundColor: tagColor }}
+                                    />
+                                  )}
+                                  {tag}
+                                </Badge>
+                              )
+                            })}
                             {place.tags.length > 3 && (
                               <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                                 +{place.tags.length - 3}
@@ -653,6 +720,9 @@ export function DestinationPage() {
             onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
             onUpdatePrice={handleUpdatePrice}
             onUpdateTicketFile={handleUpdateTicketFile}
+            tagColors={trip.tagColors || {}}
+            existingTags={allTags}
+            onUpdateTagColor={handleUpdateTagColor}
           />
         )}
       </div>
