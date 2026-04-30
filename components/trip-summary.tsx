@@ -144,13 +144,13 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryPr
         <CollapsibleContent>
           <div className="border-t p-4">
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Pie Chart */}
+              {/* Pie Chart with Tag Labels Below */}
               <div className="flex flex-col">
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-medium">
                   <MapPin className="size-4" />
                   Places by Tag
                 </h3>
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+                <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -159,11 +159,9 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryPr
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        innerRadius={50}
-                        outerRadius={90}
+                        innerRadius={45}
+                        outerRadius={80}
                         paddingAngle={2}
-                        label={({ name, percentage }) => `${percentage}%`}
-                        labelLine={false}
                       >
                         {tagData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
@@ -190,66 +188,77 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryPr
                     </PieChart>
                   </ResponsiveContainer>
                 </ChartContainer>
-              </div>
 
-              {/* Tag Legend with Color Selector */}
-              <div className="flex flex-col">
-                <h3 className="mb-3 flex items-center gap-2 text-sm font-medium">
-                  Tag Distribution
-                </h3>
-                <div className="space-y-2">
+                {/* Tag Labels with Color Pickers */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   {tagData.map((tag) => (
                     <div
                       key={tag.name}
-                      className="flex items-center justify-between rounded-lg border p-2"
+                      className="flex items-center gap-1.5 rounded-full border px-2 py-1"
                     >
-                      <div className="flex items-center gap-2">
-                        {tag.name !== "Other" ? (
-                          <input
-                            type="color"
-                            value={tag.color}
-                            onChange={(e) => onUpdateTagColor(tag.name, e.target.value)}
-                            className="size-6 cursor-pointer rounded border-0 bg-transparent p-0"
-                            title={`Change color for ${tag.name}`}
-                          />
-                        ) : (
-                          <div
-                            className="size-6 rounded"
-                            style={{ backgroundColor: tag.color }}
-                          />
-                        )}
-                        <span className="font-medium">{tag.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{tag.count} place{tag.count !== 1 ? "s" : ""}</span>
-                        <span className="font-medium text-foreground">{tag.percentage}%</span>
-                      </div>
+                      {tag.name !== "Other" ? (
+                        <input
+                          type="color"
+                          value={tag.color}
+                          onChange={(e) => onUpdateTagColor(tag.name, e.target.value)}
+                          className="size-3.5 cursor-pointer rounded-full border-0 bg-transparent p-0"
+                          title={`Change color for ${tag.name}`}
+                        />
+                      ) : (
+                        <div
+                          className="size-3.5 rounded-full"
+                          style={{ backgroundColor: tag.color }}
+                        />
+                      )}
+                      <span className="text-xs font-medium">{tag.name}</span>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                {/* Cost Summary */}
-                {totalEstimatedCost > 0 && (
-                  <div className="mt-4 rounded-lg bg-muted/50 p-4">
-                    <h4 className="flex items-center gap-2 text-sm font-medium">
-                      <Euro className="size-4" />
-                      Cost Estimate
-                    </h4>
-                    <div className="mt-2 space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total estimated:</span>
-                        <span className="font-semibold">{totalEstimatedCost.toFixed(2)} EUR</span>
+              {/* Cost Estimate Section */}
+              <div className="flex flex-col">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <Euro className="size-4" />
+                  Cost Estimate
+                </h3>
+                {totalEstimatedCost > 0 ? (
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <div className="mb-4 text-center">
+                      <div className="text-3xl font-bold text-primary">
+                        {totalEstimatedCost.toFixed(2)} EUR
                       </div>
+                      <div className="text-sm text-muted-foreground">Total estimated cost</div>
+                    </div>
+                    <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Places with prices:</span>
-                        <span>{placesWithCost} of {placesCount}</span>
+                        <span className="font-medium">{placesWithCost} of {placesCount}</span>
                       </div>
                       {placesWithCost > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Average per place:</span>
-                          <span>{(totalEstimatedCost / placesWithCost).toFixed(2)} EUR</span>
+                          <span className="font-medium">{(totalEstimatedCost / placesWithCost).toFixed(2)} EUR</span>
                         </div>
                       )}
+                      {placesCount - placesWithCost > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Missing prices:</span>
+                          <span className="font-medium">{placesCount - placesWithCost} place{placesCount - placesWithCost !== 1 ? "s" : ""}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed p-6 text-center">
+                    <div>
+                      <Euro className="mx-auto mb-2 size-8 text-muted-foreground/50" />
+                      <p className="text-sm text-muted-foreground">
+                        No cost estimates yet
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground/70">
+                        Add prices to your places to see cost breakdown
+                      </p>
                     </div>
                   </div>
                 )}
