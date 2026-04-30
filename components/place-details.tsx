@@ -40,7 +40,24 @@ interface PlaceDetailsProps {
   onUpdateEstimatedDuration?: (placeId: string, duration: number | undefined) => void
   onUpdatePrice?: (placeId: string, price: string | undefined) => void
   onUpdateTicketFile?: (placeId: string, ticketFile: TicketFile | undefined) => void
+  tagColors?: Record<string, string>
+  existingTags?: string[]
+  onUpdateTagColor?: (tag: string, color: string) => void
 }
+
+// Default color palette for new tags
+const TAG_COLOR_PALETTE = [
+  "#ef4444", // red
+  "#f97316", // orange
+  "#eab308", // yellow
+  "#22c55e", // green
+  "#14b8a6", // teal
+  "#3b82f6", // blue
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#6366f1", // indigo
+  "#06b6d4", // cyan
+]
 
 export function PlaceDetails({
   place,
@@ -55,6 +72,9 @@ export function PlaceDetails({
   onUpdateEstimatedDuration,
   onUpdatePrice,
   onUpdateTicketFile,
+  tagColors = {},
+  existingTags = [],
+  onUpdateTagColor,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -67,6 +87,11 @@ export function PlaceDetails({
   const [isAddingHours, setIsAddingHours] = useState(false)
   const [isEditingTags, setIsEditingTags] = useState(false)
   const [newTag, setNewTag] = useState("")
+  const [newTagColor, setNewTagColor] = useState(() => {
+    // Find first available color from palette that's not already used
+    const usedColors = Object.values(tagColors).map(c => c.toLowerCase())
+    return TAG_COLOR_PALETTE.find(c => !usedColors.includes(c.toLowerCase())) || TAG_COLOR_PALETTE[0]
+  })
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState(detailedPlace.name)
   const [isEditingDuration, setIsEditingDuration] = useState(false)
@@ -401,23 +426,65 @@ export function PlaceDetails({
     )
   }
 
-  const handleAddTag = async () => {
-    if (!newTag.trim() || !onUpdateTags) return
+  const isColorUsed = (color: string) => {
+    const normalizedColor = color.toLowerCase()
+    return Object.values(tagColors).some(c => c.toLowerCase() === normalizedColor)
+  }
+
+  const getNextAvailableColor = () => {
+    const usedColors = Object.values(tagColors).map(c => c.toLowerCase())
+    return TAG_COLOR_PALETTE.find(c => !usedColors.includes(c.toLowerCase())) || TAG_COLOR_PALETTE[0]
+  }
+
+  const handleAddTag = async (tagName?: string, color?: string) => {
+    const tagToAdd = tagName || newTag.trim()
+    if (!tagToAdd || !onUpdateTags) return
 
     const currentTags = detailedPlace.tags || []
-    if (currentTags.includes(newTag.trim())) {
+    if (currentTags.includes(tagToAdd)) {
       setNewTag("")
       return
     }
 
-    const updatedTags = [...currentTags, newTag.trim()]
+    const updatedTags = [...currentTags, tagToAdd]
     setDetailedPlace((prev) => ({ ...prev, tags: updatedTags }))
 
     try {
       await onUpdateTags(detailedPlace.id, updatedTags)
+      
+      // If it's a new tag (not existing), save its color
+      if (!existingTags.includes(tagToAdd) && onUpdateTagColor) {
+        const tagColor = color || newTagColor
+        // Check if color is already used
+        if (isColorUsed(tagColor)) {
+          // Find another available color
+          const availableColor = getNextAvailableColor()
+          await onUpdateTagColor(tagToAdd, availableColor)
+        } else {
+          await onUpdateTagColor(tagToAdd, tagColor)
+        }
+      }
+      
       setNewTag("")
+      setNewTagColor(getNextAvailableColor())
     } catch (error) {
       console.error("[v0] Error adding tag:", error)
+    }
+  }
+  
+  const handleAddExistingTag = async (tag: string) => {
+    if (!onUpdateTags) return
+    
+    const currentTags = detailedPlace.tags || []
+    if (currentTags.includes(tag)) return
+    
+    const updatedTags = [...currentTags, tag]
+    setDetailedPlace((prev) => ({ ...prev, tags: updatedTags }))
+    
+    try {
+      await onUpdateTags(detailedPlace.id, updatedTags)
+    } catch (error) {
+      console.error("[v0] Error adding existing tag:", error)
     }
   }
 
@@ -841,7 +908,7 @@ export function PlaceDetails({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Tags:</span>
                 {onUpdateTags && (
@@ -856,42 +923,128 @@ export function PlaceDetails({
                 )}
               </div>
 
+              {/* Current tags on this place */}
               <div className="flex flex-wrap gap-2">
                 {detailedPlace.tags && detailedPlace.tags.length > 0 ? (
-                  detailedPlace.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                      {tag}
-                      {isEditingTags && onUpdateTags && (
-                        <button onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
-                          <X className="size-3" />
-                        </button>
-                      )}
-                    </Badge>
-                  ))
+                  detailedPlace.tags.map((tag) => {
+                    const color = tagColors[tag]
+                    return (
+                      <Badge 
+                        key={tag} 
+                        variant="secondary" 
+                        className="gap-1.5"
+                        style={color ? {
+                          backgroundColor: `${color}20`,
+                          color: color,
+                          borderColor: color,
+                        } : undefined}
+                      >
+                        {color && (
+                          <span 
+                            className="size-2 rounded-full" 
+                            style={{ backgroundColor: color }}
+                          />
+                        )}
+                        {tag}
+                        {isEditingTags && onUpdateTags && (
+                          <button onClick={() => handleRemoveTag(tag)} className="ml-1 hover:text-destructive">
+                            <X className="size-3" />
+                          </button>
+                        )}
+                      </Badge>
+                    )
+                  })
                 ) : (
                   <span className="text-sm text-muted-foreground">Aucun tag</span>
                 )}
               </div>
 
               {isEditingTags && onUpdateTags && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Ajouter un tag..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddTag()
-                      } else if (e.key === "Escape") {
-                        setIsEditingTags(false)
-                        setNewTag("")
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleAddTag} size="sm">
-                    <Plus className="size-4" />
-                  </Button>
+                <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                  {/* Existing tags from other places */}
+                  {existingTags.filter(tag => !(detailedPlace.tags || []).includes(tag)).length > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-medium text-muted-foreground">Tags existants:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {existingTags
+                          .filter(tag => !(detailedPlace.tags || []).includes(tag))
+                          .map((tag) => {
+                            const color = tagColors[tag]
+                            return (
+                              <button
+                                key={tag}
+                                onClick={() => handleAddExistingTag(tag)}
+                                className="flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs transition-colors hover:bg-accent"
+                                style={color ? { borderColor: color } : undefined}
+                              >
+                                {color && (
+                                  <span 
+                                    className="size-2 rounded-full" 
+                                    style={{ backgroundColor: color }}
+                                  />
+                                )}
+                                <Plus className="size-2.5" />
+                                {tag}
+                              </button>
+                            )
+                          })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Create new tag */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-medium text-muted-foreground">Créer un nouveau tag:</span>
+                    <div className="flex gap-2">
+                      <div className="relative">
+                        <input
+                          type="color"
+                          value={newTagColor}
+                          onChange={(e) => {
+                            const color = e.target.value
+                            if (isColorUsed(color)) {
+                              // Show visual feedback that color is taken
+                              return
+                            }
+                            setNewTagColor(color)
+                          }}
+                          className="size-9 cursor-pointer rounded-md border bg-transparent p-1"
+                          title="Choisir une couleur"
+                        />
+                        {isColorUsed(newTagColor) && (
+                          <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
+                            !
+                          </span>
+                        )}
+                      </div>
+                      <Input
+                        placeholder="Nom du tag..."
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleAddTag()
+                          } else if (e.key === "Escape") {
+                            setIsEditingTags(false)
+                            setNewTag("")
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                      <Button 
+                        onClick={() => handleAddTag()} 
+                        size="sm"
+                        disabled={!newTag.trim()}
+                      >
+                        <Plus className="size-4" />
+                      </Button>
+                    </div>
+                    {isColorUsed(newTagColor) && (
+                      <p className="text-xs text-destructive">
+                        Cette couleur est déjà utilisée. Choisissez une autre couleur.
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

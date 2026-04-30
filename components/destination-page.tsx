@@ -701,6 +701,9 @@ export function DestinationPage() {
             onUpdateEstimatedDuration={handleUpdateEstimatedDuration}
             onUpdatePrice={handleUpdatePrice}
             onUpdateTicketFile={handleUpdateTicketFile}
+            tagColors={trip.tagColors || {}}
+            existingTags={allTags}
+            onUpdateTagColor={handleUpdateTagColor}
           />
         )}
       </div>
