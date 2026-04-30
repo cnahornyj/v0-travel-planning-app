@@ -26,6 +26,7 @@ import {
   Download,
 } from "lucide-react"
 import type { Place, Trip, TicketFile } from "./travel-planner"
+import { ColorPicker } from "@/components/ui/color-picker"
 
 interface PlaceDetailsProps {
   place: Place
@@ -995,28 +996,17 @@ export function PlaceDetails({
                   {/* Create new tag */}
                   <div className="space-y-2">
                     <span className="text-xs font-medium text-muted-foreground">Créer un nouveau tag:</span>
-                    <div className="flex gap-2">
-                      <div className="relative">
-                        <input
-                          type="color"
-                          value={newTagColor}
-                          onChange={(e) => {
-                            const color = e.target.value
-                            if (isColorUsed(color)) {
-                              // Show visual feedback that color is taken
-                              return
-                            }
+                    <div className="flex flex-wrap items-start gap-2">
+                      <ColorPicker
+                        value={newTagColor}
+                        onChange={(color) => {
+                          if (!isColorUsed(color)) {
                             setNewTagColor(color)
-                          }}
-                          className="size-9 cursor-pointer rounded-md border bg-transparent p-1"
-                          title="Choisir une couleur"
-                        />
-                        {isColorUsed(newTagColor) && (
-                          <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
-                            !
-                          </span>
-                        )}
-                      </div>
+                          }
+                        }}
+                        error={isColorUsed(newTagColor)}
+                        showHexInput={true}
+                      />
                       <Input
                         placeholder="Nom du tag..."
                         value={newTag}
@@ -1029,7 +1019,7 @@ export function PlaceDetails({
                             setNewTag("")
                           }
                         }}
-                        className="flex-1"
+                        className="min-w-[120px] flex-1"
                       />
                       <Button 
                         onClick={() => handleAddTag()} 

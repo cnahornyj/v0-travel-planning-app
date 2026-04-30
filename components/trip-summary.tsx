@@ -5,8 +5,19 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { ChevronDown, ChevronUp, PieChart as PieChartIcon, Euro, MapPin } from "lucide-react"
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts"
+import { ChevronDown, ChevronUp, PieChart as PieChartIcon, Euro, MapPin, Trash2 } from "lucide-react"
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
+import { ColorPicker } from "@/components/ui/color-picker"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import type { Trip, Place } from "./travel-planner"
 
 // Predefined color palette for tags
@@ -29,6 +40,7 @@ interface TripSummaryProps {
   trip: Trip
   tagColors: Record<string, string>
   onUpdateTagColor: (tag: string, color: string) => void
+  onDeleteTag?: (tag: string) => void
 }
 
 interface TagData {
@@ -39,8 +51,10 @@ interface TagData {
   percentage: string
 }
 
-export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryProps) {
+export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: TripSummaryProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [tagToDelete, setTagToDelete] = useState<string | null>(null)
+  const [placesWithTagCount, setPlacesWithTagCount] = useState(0)
 
   // Calculate tag distribution and costs
   const { tagData, totalEstimatedCost, placesWithCost, placesCount } = useMemo(() => {
@@ -104,6 +118,22 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryPr
     })
     return config
   }, [tagData])
+
+  const handleDeleteTagClick = (tagName: string) => {
+    // Count places that have this tag
+    const count = trip.places.filter(
+      (place) => place.tags?.includes(tagName)
+    ).length
+    setPlacesWithTagCount(count)
+    setTagToDelete(tagName)
+  }
+
+  const confirmDeleteTag = () => {
+    if (tagToDelete && onDeleteTag) {
+      onDeleteTag(tagToDelete)
+    }
+    setTagToDelete(null)
+  }
 
   if (trip.places.length === 0) {
     return null
@@ -189,28 +219,42 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryPr
                   </ResponsiveContainer>
                 </ChartContainer>
 
-                {/* Tag Labels with Color Pickers */}
+                {/* Tag Labels with Color Pickers and Delete */}
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   {tagData.map((tag) => (
                     <div
                       key={tag.name}
-                      className="flex items-center gap-1.5 rounded-full border px-2 py-1"
+                      className="group flex items-center gap-1.5 rounded-full border px-2 py-1 transition-colors hover:bg-accent/50"
                     >
                       {tag.name !== "Other" ? (
-                        <input
-                          type="color"
-                          value={tag.color}
-                          onChange={(e) => onUpdateTagColor(tag.name, e.target.value)}
-                          className="size-3.5 cursor-pointer rounded-full border-0 bg-transparent p-0"
-                          title={`Change color for ${tag.name}`}
-                        />
+                        <>
+                          <input
+                            type="color"
+                            value={tag.color}
+                            onChange={(e) => onUpdateTagColor(tag.name, e.target.value)}
+                            className="size-3.5 cursor-pointer rounded-full border-0 bg-transparent p-0"
+                            title={`Change color for ${tag.name}`}
+                          />
+                          <span className="text-xs font-medium">{tag.name}</span>
+                          {onDeleteTag && (
+                            <button
+                              onClick={() => handleDeleteTagClick(tag.name)}
+                              className="ml-0.5 rounded-full p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                              title={`Supprimer le tag ${tag.name}`}
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          )}
+                        </>
                       ) : (
-                        <div
-                          className="size-3.5 rounded-full"
-                          style={{ backgroundColor: tag.color }}
-                        />
+                        <>
+                          <div
+                            className="size-3.5 rounded-full"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          <span className="text-xs font-medium">{tag.name}</span>
+                        </>
                       )}
-                      <span className="text-xs font-medium">{tag.name}</span>
                     </div>
                   ))}
                 </div>
@@ -267,6 +311,31 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor }: TripSummaryPr
           </div>
         </CollapsibleContent>
       </Card>
+
+      {/* Delete Tag Confirmation Dialog */}
+      <AlertDialog open={tagToDelete !== null} onOpenChange={(open) => !open && setTagToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le tag &quot;{tagToDelete}&quot; ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Attention, le tag sera dissocié de {placesWithTagCount > 0 ? (
+                <>toutes les <strong>{placesWithTagCount}</strong> location{placesWithTagCount > 1 ? "s" : ""} qui le contiennent</>
+              ) : (
+                "toutes les locations"
+              )}. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Non</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTag}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Oui, supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Collapsible>
   )
 }

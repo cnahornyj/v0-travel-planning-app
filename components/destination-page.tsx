@@ -296,6 +296,24 @@ export function DestinationPage() {
     await updateTrip({ tagColors: updatedTagColors })
   }
 
+  const handleDeleteTag = async (tagToDelete: string) => {
+    if (!trip) return
+
+    // Remove tag from all places
+    const updatedPlaces = trip.places.map((place) => ({
+      ...place,
+      tags: place.tags?.filter((t) => t !== tagToDelete),
+    }))
+
+    // Remove tag color
+    const { [tagToDelete]: _, ...remainingTagColors } = trip.tagColors || {}
+
+    await updateTrip({
+      places: updatedPlaces,
+      tagColors: remainingTagColors,
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -398,6 +416,7 @@ export function DestinationPage() {
                 trip={trip}
                 tagColors={trip.tagColors || {}}
                 onUpdateTagColor={handleUpdateTagColor}
+                onDeleteTag={handleDeleteTag}
               />
             )}
 
