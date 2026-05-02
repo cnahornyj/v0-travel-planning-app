@@ -52,6 +52,7 @@ export interface Place {
   editorialSummary?: string
   numberOfNights?: number // for hostel/hotel locations
   reservationMade?: boolean // whether the reservation has been made
+  userRating?: number // user's personal rating (1-5)
 }
 
 export interface ScheduledEvent {

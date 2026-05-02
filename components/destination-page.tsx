@@ -217,6 +217,17 @@ export function DestinationPage() {
     }
   }
 
+  const handleUpdateUserRating = async (placeId: string, userRating: number | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, userRating } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, userRating } : null))
+    }
+  }
+
   const updateTrip = async (updates: Partial<Trip>) => {
     try {
       const response = await fetch(`/api/trips/${tripId}`, {
@@ -775,6 +786,7 @@ export function DestinationPage() {
             tagColors={trip.tagColors || {}}
             existingTags={allTags}
             onUpdateTagColor={handleUpdateTagColor}
+            onUpdateUserRating={handleUpdateUserRating}
           />
         )}
       </div>
