@@ -24,6 +24,8 @@ export function HomePage() {
     description: "",
     startDate: "",
     endDate: "",
+    adults: 1,
+    children: 0,
   })
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [tripToDelete, setTripToDelete] = useState<Trip | null>(null)
@@ -63,7 +65,7 @@ export function HomePage() {
         const tripWithId = { ...trip, id: trip._id.toString() }
         setTrips((prev) => [...prev, tripWithId])
         setShowCreateDialog(false)
-        setNewTrip({ name: "", description: "", startDate: "", endDate: "" })
+        setNewTrip({ name: "", description: "", startDate: "", endDate: "", adults: 1, children: 0 })
       }
     } catch (error) {
       console.error("Error creating trip:", error)
@@ -94,6 +96,8 @@ export function HomePage() {
           description: tripToEdit.description,
           startDate: tripToEdit.startDate,
           endDate: tripToEdit.endDate,
+          adults: tripToEdit.adults,
+          children: tripToEdit.children,
         }),
       })
 
@@ -226,6 +230,28 @@ export function HomePage() {
                 />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="adults">Adults</Label>
+                <Input
+                  id="adults"
+                  type="number"
+                  min="1"
+                  value={newTrip.adults}
+                  onChange={(e) => setNewTrip({ ...newTrip, adults: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="children">Children</Label>
+                <Input
+                  id="children"
+                  type="number"
+                  min="0"
+                  value={newTrip.children}
+                  onChange={(e) => setNewTrip({ ...newTrip, children: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
             <Button onClick={handleCreateTrip} disabled={!newTrip.name} className="w-full">
               Create Destination
             </Button>
@@ -294,6 +320,28 @@ export function HomePage() {
                     type="date"
                     value={tripToEdit.endDate || ""}
                     onChange={(e) => setTripToEdit({ ...tripToEdit, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-adults">Adults</Label>
+                  <Input
+                    id="edit-adults"
+                    type="number"
+                    min="1"
+                    value={tripToEdit.adults || 1}
+                    onChange={(e) => setTripToEdit({ ...tripToEdit, adults: parseInt(e.target.value) || 1 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-children">Children</Label>
+                  <Input
+                    id="edit-children"
+                    type="number"
+                    min="0"
+                    value={tripToEdit.children || 0}
+                    onChange={(e) => setTripToEdit({ ...tripToEdit, children: parseInt(e.target.value) || 0 })}
                   />
                 </div>
               </div>

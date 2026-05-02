@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Moon, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Moon, CheckCircle2, User, Baby } from "lucide-react"
 import type { Trip, Place, ScheduledEvent, TicketFile } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
@@ -393,6 +393,22 @@ export function DestinationPage() {
                     {' - '}
                     {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
+                </div>
+              )}
+              {(trip.adults || trip.children) && (
+                <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
+                  {trip.adults && trip.adults > 0 && (
+                    <div className="flex items-center gap-1">
+                      <User className="size-3.5" />
+                      <span>{trip.adults}</span>
+                    </div>
+                  )}
+                  {trip.children && trip.children > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Baby className="size-3.5" />
+                      <span>{trip.children}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

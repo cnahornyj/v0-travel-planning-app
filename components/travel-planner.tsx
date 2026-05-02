@@ -71,6 +71,8 @@ export interface Trip {
   description?: string
   startDate?: string
   endDate?: string
+  adults?: number
+  children?: number
   places: Place[]
   scheduledEvents?: ScheduledEvent[]
   tagColors?: Record<string, string>
