@@ -791,6 +791,7 @@ export function DestinationPage() {
         onEditEvent={handleEditEvent}
         tripStartDate={trip.startDate}
         tripEndDate={trip.endDate}
+        tagColors={trip.tagColors || {}}
       />
 
       {/* Event Creation Dialog */}
