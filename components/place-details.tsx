@@ -44,6 +44,7 @@ interface PlaceDetailsProps {
   tagColors?: Record<string, string>
   existingTags?: string[]
   onUpdateTagColor?: (tag: string, color: string) => void
+  onUpdateUserRating?: (placeId: string, rating: number | undefined) => void
 }
 
 // Default color palette for new tags
@@ -76,6 +77,7 @@ export function PlaceDetails({
   tagColors = {},
   existingTags = [],
   onUpdateTagColor,
+  onUpdateUserRating,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -641,6 +643,57 @@ export function PlaceDetails({
               {detailedPlace.priceLevel !== undefined && <Badge>{getPriceLevelText(detailedPlace.priceLevel)}</Badge>}
 
               {detailedPlace.type && <Badge variant="outline">{detailedPlace.type.replace("_", " ")}</Badge>}
+            </div>
+
+            {/* Editorial Summary */}
+            {detailedPlace.editorialSummary && (
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-sm italic text-muted-foreground">
+                  {detailedPlace.editorialSummary}
+                </p>
+              </div>
+            )}
+
+            {/* User Rating */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Star className="size-4" />
+                <span className="text-sm font-medium">Ma note:</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => {
+                      if (onUpdateUserRating) {
+                        // Toggle off if clicking the same rating
+                        const newRating = detailedPlace.userRating === star ? undefined : star
+                        setDetailedPlace((prev) => ({ ...prev, userRating: newRating }))
+                        onUpdateUserRating(detailedPlace.id, newRating)
+                      }
+                    }}
+                    className={`transition-colors ${onUpdateUserRating ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
+                    disabled={!onUpdateUserRating}
+                    title={onUpdateUserRating ? `Noter ${star} étoile${star > 1 ? "s" : ""}` : undefined}
+                  >
+                    <Star
+                      className={`size-6 ${
+                        detailedPlace.userRating && star <= detailedPlace.userRating
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-muted-foreground/40"
+                      }`}
+                    />
+                  </button>
+                ))}
+                {detailedPlace.userRating && (
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {detailedPlace.userRating}/5
+                  </span>
+                )}
+                {!detailedPlace.userRating && (
+                  <span className="ml-2 text-sm text-muted-foreground">Non noté</span>
+                )}
+              </div>
             </div>
 
             {formatOpeningHours()}

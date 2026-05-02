@@ -50,6 +50,9 @@ export interface Place {
     time: number
   }>
   editorialSummary?: string
+  numberOfNights?: number // for hostel/hotel locations
+  reservationMade?: boolean // whether the reservation has been made
+  userRating?: number // user's personal rating (1-5)
 }
 
 export interface ScheduledEvent {
@@ -68,9 +71,12 @@ export interface Trip {
   description?: string
   startDate?: string
   endDate?: string
+  adults?: number
+  children?: number
   places: Place[]
   scheduledEvents?: ScheduledEvent[]
   tagColors?: Record<string, string>
+  coverPhotos?: string[] // Custom ordered photos for the destination card
   createdAt: string
 }
 

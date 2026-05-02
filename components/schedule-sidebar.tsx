@@ -16,6 +16,22 @@ import {
 import type { Place, ScheduledEvent } from "./travel-planner"
 import { cn } from "@/lib/utils"
 
+// Default color palette for tags (same as in trip-summary.tsx)
+const TAG_COLORS = [
+  "#06b6d4", // cyan
+  "#8b5cf6", // violet
+  "#f97316", // orange
+  "#10b981", // emerald
+  "#ec4899", // pink
+  "#eab308", // yellow
+  "#3b82f6", // blue
+  "#ef4444", // red
+  "#14b8a6", // teal
+  "#a855f7", // purple
+]
+
+const DEFAULT_EVENT_COLOR = "#6366f1" // indigo/primary
+
 interface ScheduleSidebarProps {
   isOpen: boolean
   onClose: () => void
@@ -27,6 +43,7 @@ interface ScheduleSidebarProps {
   onEditEvent: (event: ScheduledEvent) => void
   tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
   tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
+  tagColors?: Record<string, string> // Custom colors for tags
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -192,12 +209,29 @@ export function ScheduleSidebar({
   onEditEvent,
   tripStartDate,
   tripEndDate,
+  tagColors = {},
 }: ScheduleSidebarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   
   const hasTripDateConstraints = !!(tripStartDate && tripEndDate)
+
+  // Get color for an event based on the place's first tag
+  const getEventColor = (place: Place): string => {
+    if (!place.tags || place.tags.length === 0) {
+      return DEFAULT_EVENT_COLOR
+    }
+    const firstTag = place.tags[0]
+    // Check if there's a custom color for this tag
+    if (tagColors[firstTag]) {
+      return tagColors[firstTag]
+    }
+    // Otherwise use the default palette based on tag index
+    const allTags = [...new Set(places.flatMap(p => p.tags || []))]
+    const tagIndex = allTags.indexOf(firstTag)
+    return TAG_COLORS[tagIndex % TAG_COLORS.length] || DEFAULT_EVENT_COLOR
+  }
 
   const weekDates = useMemo(() => getWeekDates(currentDate), [currentDate])
 
@@ -419,15 +453,23 @@ export function ScheduleSidebar({
                     event.duration
                   )
 
+                  const eventColor = getEventColor(event.place)
+                  
                   return (
                     <div
                       key={event.id}
                       className={cn(
-                        "absolute left-0.5 right-0.5 z-10 cursor-pointer overflow-hidden rounded border bg-primary/90 px-1.5 py-1 text-primary-foreground shadow-sm transition-all",
-                        isHovered && "z-30 ring-2 ring-primary ring-offset-2",
-                        !openingCheck.isOpen && "border-amber-400 bg-amber-500/90"
+                        "absolute left-0.5 right-0.5 z-10 cursor-pointer overflow-hidden rounded border px-1.5 py-1 text-white shadow-sm transition-all",
+                        isHovered && "z-30 ring-2 ring-offset-2",
+                        !openingCheck.isOpen && "border-amber-400"
                       )}
-                      style={{ top, height }}
+                      style={{ 
+                        top, 
+                        height,
+                        backgroundColor: openingCheck.isOpen ? eventColor : undefined,
+                        borderColor: isHovered ? eventColor : undefined,
+                        ["--tw-ring-color" as string]: eventColor,
+                      }}
                       onMouseEnter={() => setHoveredEvent(event.id)}
                       onMouseLeave={() => setHoveredEvent(null)}
                       onClick={() => onEditEvent(event)}
