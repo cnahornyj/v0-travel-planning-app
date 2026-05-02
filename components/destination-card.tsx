@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Info, Trash2, Calendar, Pencil, Images, MoveUp, MoveDown, X } from "lucide-react"
+import { Info, Trash2, Calendar, Pencil, Images, X, GripVertical } from "lucide-react"
 import type { Trip } from "@/components/travel-planner"
 
 interface DestinationCardProps {
@@ -20,6 +20,8 @@ export function DestinationCard({ trip, onClick, onInfoClick, onEditClick, onDel
   const [isHovering, setIsHovering] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showPhotoManager, setShowPhotoManager] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Collect all photos from all places in this trip
@@ -174,70 +176,76 @@ export function DestinationCard({ trip, onClick, onInfoClick, onEditClick, onDel
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Drag photos to reorder. The first photo will be the main cover image.
+              Glissez-deposez les photos pour les reordonner. La premiere photo sera la couverture.
             </p>
             <div className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
               {(trip.coverPhotos && trip.coverPhotos.length > 0 ? trip.coverPhotos : availablePhotos).map((photo, index) => {
                 const currentPhotos = trip.coverPhotos && trip.coverPhotos.length > 0 ? trip.coverPhotos : availablePhotos
+                const isDragging = draggedIndex === index
+                const isDragOver = dragOverIndex === index && draggedIndex !== index
                 
                 return (
-                  <div key={`${photo}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border">
+                  <div
+                    key={`${photo}-${index}`}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedIndex(index)
+                      e.dataTransfer.effectAllowed = "move"
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIndex(null)
+                      setDragOverIndex(null)
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.dataTransfer.dropEffect = "move"
+                      setDragOverIndex(index)
+                    }}
+                    onDragLeave={() => {
+                      setDragOverIndex(null)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      if (draggedIndex !== null && draggedIndex !== index) {
+                        const photos = [...currentPhotos]
+                        const draggedPhoto = photos[draggedIndex]
+                        photos.splice(draggedIndex, 1)
+                        photos.splice(index, 0, draggedPhoto)
+                        onUpdateCoverPhotos?.(trip.id, photos)
+                      }
+                      setDraggedIndex(null)
+                      setDragOverIndex(null)
+                    }}
+                    className={`group relative aspect-square cursor-grab overflow-hidden rounded-lg border-2 transition-all active:cursor-grabbing ${
+                      isDragging ? "opacity-50 scale-95" : ""
+                    } ${isDragOver ? "border-primary ring-2 ring-primary/30" : "border-transparent"}`}
+                  >
                     <img
                       src={photo}
                       alt={`Photo ${index + 1}`}
-                      className="size-full object-cover"
+                      className="size-full object-cover pointer-events-none"
                     />
                     {index === 0 && (
                       <div className="absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
                         Cover
                       </div>
                     )}
-                    <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                      {index > 0 && (
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="size-8"
-                          onClick={() => {
-                            const photos = [...currentPhotos]
-                            const temp = photos[index]
-                            photos[index] = photos[index - 1]
-                            photos[index - 1] = temp
-                            onUpdateCoverPhotos?.(trip.id, photos)
-                          }}
-                          title="Move up"
-                        >
-                          <MoveUp className="size-4" />
-                        </Button>
-                      )}
-                      {index < currentPhotos.length - 1 && (
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="size-8"
-                          onClick={() => {
-                            const photos = [...currentPhotos]
-                            const temp = photos[index]
-                            photos[index] = photos[index + 1]
-                            photos[index + 1] = temp
-                            onUpdateCoverPhotos?.(trip.id, photos)
-                          }}
-                          title="Move down"
-                        >
-                          <MoveDown className="size-4" />
-                        </Button>
-                      )}
+                    <div className="absolute right-2 top-2 rounded bg-black/60 p-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <GripVertical className="size-4 text-white" />
+                    </div>
+                    <div className="absolute bottom-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="size-8"
-                        onClick={() => {
+                        className="size-7"
+                        onClick={(e) => {
+                          e.stopPropagation()
                           const photos = currentPhotos.filter((_, i) => i !== index)
                           onUpdateCoverPhotos?.(trip.id, photos)
                         }}
                         title="Remove from cover"
                       >
-                        <X className="size-4" />
+                        <X className="size-3.5" />
                       </Button>
                     </div>
                   </div>
