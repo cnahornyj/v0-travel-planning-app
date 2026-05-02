@@ -618,18 +618,16 @@ export function DestinationPage() {
                                               {place.numberOfNights ? `${place.numberOfNights} nuit${place.numberOfNights > 1 ? "s" : ""}` : "Nuits?"}
                                             </Badge>
                                           )}
-                                          {/* Show reservation status for hostel-tagged places */}
-                                          {place.tags?.some(tag => tag.toLowerCase() === "hostel") && (
-                                            <Badge
-                                              variant={place.reservationMade ? "default" : "outline"}
-                                              className={`cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent ${place.reservationMade ? "bg-green-600 hover:bg-green-700" : ""}`}
-                                              onClick={() => handleUpdateReservationMade(place.id, !place.reservationMade)}
-                                              title={place.reservationMade ? "Réservation confirmée" : "Réservation non faite"}
-                                            >
-                                              <CheckCircle2 className="size-2.5" />
-                                              {place.reservationMade ? "Réservé" : "Non réservé"}
-                                            </Badge>
-                                          )}
+                                          {/* Show reservation status for all places */}
+                                          <Badge
+                                            variant={place.reservationMade ? "default" : "outline"}
+                                            className={`cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent ${place.reservationMade ? "bg-green-600 hover:bg-green-700" : ""}`}
+                                            onClick={() => handleUpdateReservationMade(place.id, !place.reservationMade)}
+                                            title={place.reservationMade ? "Réservation confirmée" : "Réservation non faite"}
+                                          >
+                                            <CheckCircle2 className="size-2.5" />
+                                            {place.reservationMade ? "Réservé" : "Non réservé"}
+                                          </Badge>
                                           <Badge
                                             variant="outline"
                                             className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
