@@ -674,6 +674,12 @@ export function DestinationPage() {
                           <span className="line-clamp-1">{place.address}</span>
                         </div>
 
+                        {place.editorialSummary && (
+                          <p className="mt-1 line-clamp-2 text-xs italic text-muted-foreground/80">
+                            {place.editorialSummary}
+                          </p>
+                        )}
+
                         {editingNotes === place.id ? (
                           <Textarea
                             defaultValue={place.notes || ""}
