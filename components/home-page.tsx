@@ -133,6 +133,24 @@ export function HomePage() {
     }
   }
 
+  const handleUpdateCoverPhotos = async (tripId: string, coverPhotos: string[]) => {
+    try {
+      const response = await fetch(`/api/trips/${tripId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverPhotos }),
+      })
+
+      if (response.ok) {
+        setTrips((prev) =>
+          prev.map((t) => (t.id === tripId ? { ...t, coverPhotos } : t))
+        )
+      }
+    } catch (error) {
+      console.error("Error updating cover photos:", error)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -175,6 +193,7 @@ export function HomePage() {
               }}
               onEditClick={(e) => handleEditClick(e, trip)}
               onDeleteClick={(e) => handleDeleteClick(e, trip)}
+              onUpdateCoverPhotos={handleUpdateCoverPhotos}
             />
           ))}
         </div>

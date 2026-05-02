@@ -76,6 +76,7 @@ export interface Trip {
   places: Place[]
   scheduledEvents?: ScheduledEvent[]
   tagColors?: Record<string, string>
+  coverPhotos?: string[] // Custom ordered photos for the destination card
   createdAt: string
 }
 
