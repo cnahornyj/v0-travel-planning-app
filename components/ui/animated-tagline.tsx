@@ -33,15 +33,15 @@ export function AnimatedTagline() {
   }, [])
 
   return (
-    <p className="text-2xl font-medium text-muted-foreground flex items-center justify-center font-mono">
+    <p className="text-lg sm:text-2xl font-medium text-muted-foreground flex items-center justify-center font-mono whitespace-nowrap">
       <span 
-        className="relative inline-flex h-8"
+        className="relative inline-flex h-6 sm:h-8"
         style={{ width: "9ch" }}
       >
         {letterMappings.map((letter, i) => (
           <motion.span
             key={i}
-            className="absolute inline-flex items-center justify-center w-[1ch] h-8"
+            className="absolute inline-flex items-center justify-center w-[1ch] h-6 sm:h-8"
             style={{ left: `${letter.fromPos}ch` }}
             animate={{
               x: isDiscovery ? `${(letter.toPos - letter.fromPos)}ch` : 0,
@@ -56,7 +56,7 @@ export function AnimatedTagline() {
           </motion.span>
         ))}
       </span>
-      <span className="ml-3 h-8 inline-flex items-center">{staticPart}</span>
+      <span className="ml-2 sm:ml-3 h-6 sm:h-8 inline-flex items-center">{staticPart}</span>
     </p>
   )
 }
