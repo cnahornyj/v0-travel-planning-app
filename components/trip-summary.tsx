@@ -57,9 +57,10 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
   const [placesWithTagCount, setPlacesWithTagCount] = useState(0)
 
   // Calculate tag distribution and costs
-  const { tagData, totalEstimatedCost, placesWithCost, placesCount } = useMemo(() => {
+  const { tagData, totalEstimatedCost, amountPaid, remainingBalance, placesWithCost, placesCount } = useMemo(() => {
     const tagCounts: Record<string, number> = {}
     let totalCost = 0
+    let paidAmount = 0
     let costCount = 0
 
     trip.places.forEach((place) => {
@@ -76,8 +77,18 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
       if (place.price) {
         const numericPrice = parseFloat(place.price.replace(/[^0-9.,]/g, "").replace(",", "."))
         if (!isNaN(numericPrice)) {
-          totalCost += numericPrice
+          // For hostels, multiply by number of nights
+          const isHostel = place.tags?.some(tag => tag.toLowerCase() === "hostel")
+          const nights = isHostel && place.numberOfNights ? place.numberOfNights : 1
+          const placeTotal = numericPrice * nights
+          
+          totalCost += placeTotal
           costCount++
+
+          // If reservation is made, add to paid amount
+          if (place.reservationMade) {
+            paidAmount += placeTotal
+          }
         }
       }
     })
@@ -102,6 +113,8 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
     return {
       tagData: data,
       totalEstimatedCost: totalCost,
+      amountPaid: paidAmount,
+      remainingBalance: totalCost - paidAmount,
       placesWithCost: costCount,
       placesCount: totalPlaces,
     }
@@ -156,10 +169,24 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
             </div>
             <div className="flex items-center gap-4">
               {totalEstimatedCost > 0 && (
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Euro className="size-4 text-muted-foreground" />
-                  <span className="font-medium">{totalEstimatedCost.toFixed(2)}</span>
-                  <span className="text-muted-foreground">estimated</span>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    <Euro className="size-4 text-muted-foreground" />
+                    <span className="font-medium">{totalEstimatedCost.toFixed(2)}</span>
+                    <span className="text-muted-foreground">total</span>
+                  </div>
+                  {amountPaid > 0 && (
+                    <div className="flex items-center gap-1.5 text-green-600">
+                      <span className="font-medium">{amountPaid.toFixed(2)}</span>
+                      <span className="text-green-600/70">payé</span>
+                    </div>
+                  )}
+                  {remainingBalance > 0 && (
+                    <div className="flex items-center gap-1.5 text-orange-600">
+                      <span className="font-medium">{remainingBalance.toFixed(2)}</span>
+                      <span className="text-orange-600/70">reste</span>
+                    </div>
+                  )}
                 </div>
               )}
               {isOpen ? (
@@ -268,27 +295,42 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
                 </h3>
                 {totalEstimatedCost > 0 ? (
                   <div className="rounded-lg border bg-muted/30 p-4">
-                    <div className="mb-4 text-center">
-                      <div className="text-3xl font-bold text-primary">
-                        {totalEstimatedCost.toFixed(2)} EUR
+                    {/* Main totals grid */}
+                    <div className="mb-4 grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-lg bg-background p-3">
+                        <div className="text-xl font-bold text-primary">
+                          {totalEstimatedCost.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Total EUR</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">Total estimated cost</div>
+                      <div className="rounded-lg bg-green-50 p-3 dark:bg-green-950/30">
+                        <div className="text-xl font-bold text-green-600">
+                          {amountPaid.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Payé EUR</div>
+                      </div>
+                      <div className="rounded-lg bg-orange-50 p-3 dark:bg-orange-950/30">
+                        <div className="text-xl font-bold text-orange-600">
+                          {remainingBalance.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Reste EUR</div>
+                      </div>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Places with prices:</span>
-                        <span className="font-medium">{placesWithCost} of {placesCount}</span>
+                        <span className="text-muted-foreground">Lieux avec prix:</span>
+                        <span className="font-medium">{placesWithCost} sur {placesCount}</span>
                       </div>
                       {placesWithCost > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Average per place:</span>
+                          <span className="text-muted-foreground">Moyenne par lieu:</span>
                           <span className="font-medium">{(totalEstimatedCost / placesWithCost).toFixed(2)} EUR</span>
                         </div>
                       )}
                       {placesCount - placesWithCost > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Missing prices:</span>
-                          <span className="font-medium">{placesCount - placesWithCost} place{placesCount - placesWithCost !== 1 ? "s" : ""}</span>
+                          <span className="text-muted-foreground">Prix manquants:</span>
+                          <span className="font-medium">{placesCount - placesWithCost} lieu{placesCount - placesWithCost !== 1 ? "x" : ""}</span>
                         </div>
                       )}
                     </div>
@@ -298,10 +340,10 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
                     <div>
                       <Euro className="mx-auto mb-2 size-8 text-muted-foreground/50" />
                       <p className="text-sm text-muted-foreground">
-                        No cost estimates yet
+                        Pas encore de prix estimés
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground/70">
-                        Add prices to your places to see cost breakdown
+                        Ajoutez des prix à vos lieux pour voir le récapitulatif
                       </p>
                     </div>
                   </div>

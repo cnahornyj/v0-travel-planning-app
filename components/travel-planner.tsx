@@ -50,6 +50,8 @@ export interface Place {
     time: number
   }>
   editorialSummary?: string
+  numberOfNights?: number // for hostel/hotel locations
+  reservationMade?: boolean // whether the reservation has been made
 }
 
 export interface ScheduledEvent {

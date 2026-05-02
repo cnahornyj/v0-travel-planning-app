@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Moon, CheckCircle2 } from "lucide-react"
 import type { Trip, Place, ScheduledEvent, TicketFile } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
@@ -192,6 +192,28 @@ export function DestinationPage() {
 
     if (selectedPlace?.id === placeId) {
       setSelectedPlace((prev) => (prev ? { ...prev, openingHours: { ...prev.openingHours, weekdayText } } : null))
+    }
+  }
+
+  const handleUpdateNumberOfNights = async (placeId: string, numberOfNights: number | undefined) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, numberOfNights } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, numberOfNights } : null))
+    }
+  }
+
+  const handleUpdateReservationMade = async (placeId: string, reservationMade: boolean) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, reservationMade } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, reservationMade } : null))
     }
   }
 
@@ -569,42 +591,74 @@ export function DestinationPage() {
                           </div>
                         </div>
 
-                        <div className="mt-1 flex items-center gap-2">
-                          {place.rating && (
-                            <div className="flex items-center gap-1">
-                              <Star className="size-3.5 fill-yellow-400 text-yellow-400" />
-                              <span className="text-sm font-medium">{place.rating}</span>
-                            </div>
-                          )}
-                          <Badge
-                            variant="outline"
-                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
-                            onClick={() => {
-                              setSelectedPlace(place)
-                              setShowPlaceDetails(true)
-                            }}
-                            title="Durée estimée de visite"
-                          >
-                            <Clock className="size-2.5" />
-                            {place.estimatedDuration
-                              ? place.estimatedDuration >= 60
-                                ? `${Math.floor(place.estimatedDuration / 60)}h${place.estimatedDuration % 60 > 0 ? `${place.estimatedDuration % 60}m` : ""}`
-                                : `${place.estimatedDuration}min`
-                              : "Non défini"}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
-                            onClick={() => {
-                              setSelectedPlace(place)
-                              setShowPlaceDetails(true)
-                            }}
-                            title="Prix"
-                          >
-                            <Euro className="size-2.5" />
-                            {place.price || "Non défini"}
-                          </Badge>
-                        </div>
+<div className="mt-1 flex flex-wrap items-center gap-2">
+                                          {place.rating && (
+                                            <div className="flex items-center gap-1">
+                                              <Star className="size-3.5 fill-yellow-400 text-yellow-400" />
+                                              <span className="text-sm font-medium">{place.rating}</span>
+                                            </div>
+                                          )}
+                                          {/* Show number of nights for hostel-tagged places */}
+                                          {place.tags?.some(tag => tag.toLowerCase() === "hostel") && (
+                                            <Badge
+                                              variant="outline"
+                                              className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
+                                              onClick={() => {
+                                                const nights = prompt("Nombre de nuits:", place.numberOfNights?.toString() || "1")
+                                                if (nights !== null) {
+                                                  const numNights = parseInt(nights, 10)
+                                                  if (!isNaN(numNights) && numNights > 0) {
+                                                    handleUpdateNumberOfNights(place.id, numNights)
+                                                  }
+                                                }
+                                              }}
+                                              title="Nombre de nuits"
+                                            >
+                                              <Moon className="size-2.5" />
+                                              {place.numberOfNights ? `${place.numberOfNights} nuit${place.numberOfNights > 1 ? "s" : ""}` : "Nuits?"}
+                                            </Badge>
+                                          )}
+                                          {/* Show reservation status for hostel-tagged places */}
+                                          {place.tags?.some(tag => tag.toLowerCase() === "hostel") && (
+                                            <Badge
+                                              variant={place.reservationMade ? "default" : "outline"}
+                                              className={`cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent ${place.reservationMade ? "bg-green-600 hover:bg-green-700" : ""}`}
+                                              onClick={() => handleUpdateReservationMade(place.id, !place.reservationMade)}
+                                              title={place.reservationMade ? "Réservation confirmée" : "Réservation non faite"}
+                                            >
+                                              <CheckCircle2 className="size-2.5" />
+                                              {place.reservationMade ? "Réservé" : "Non réservé"}
+                                            </Badge>
+                                          )}
+                                          <Badge
+                                            variant="outline"
+                                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
+                                            onClick={() => {
+                                              setSelectedPlace(place)
+                                              setShowPlaceDetails(true)
+                                            }}
+                                            title="Durée estimée de visite"
+                                          >
+                                            <Clock className="size-2.5" />
+                                            {place.estimatedDuration
+                                              ? place.estimatedDuration >= 60
+                                                ? `${Math.floor(place.estimatedDuration / 60)}h${place.estimatedDuration % 60 > 0 ? `${place.estimatedDuration % 60}m` : ""}`
+                                                : `${place.estimatedDuration}min`
+                                              : "Non défini"}
+                                          </Badge>
+                                          <Badge
+                                            variant="outline"
+                                            className="cursor-pointer gap-1 px-1.5 py-0 text-[10px] hover:bg-accent"
+                                            onClick={() => {
+                                              setSelectedPlace(place)
+                                              setShowPlaceDetails(true)
+                                            }}
+                                            title="Prix"
+                                          >
+                                            <Euro className="size-2.5" />
+                                            {place.price || "Non défini"}
+                                          </Badge>
+                                        </div>
 
                         <div className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
                           <MapPin className="mt-0.5 size-3 shrink-0" />
