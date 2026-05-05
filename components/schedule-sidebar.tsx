@@ -211,11 +211,29 @@ export function ScheduleSidebar({
   tripEndDate,
   tagColors = {},
 }: ScheduleSidebarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentDate, setCurrentDate] = useState(() => {
+    // Initialize to trip start date if available, otherwise today
+    if (tripStartDate) {
+      return new Date(tripStartDate)
+    }
+    return new Date()
+  })
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const hasInitializedDate = useRef(false)
   
   const hasTripDateConstraints = !!(tripStartDate && tripEndDate)
+  
+  // Update currentDate when sidebar opens and trip has start date
+  useEffect(() => {
+    if (isOpen && tripStartDate && !hasInitializedDate.current) {
+      setCurrentDate(new Date(tripStartDate))
+      hasInitializedDate.current = true
+    }
+    if (!isOpen) {
+      hasInitializedDate.current = false
+    }
+  }, [isOpen, tripStartDate])
 
   // Get color for an event based on the place's first tag
   const getEventColor = (place: Place): string => {
