@@ -1,5 +1,66 @@
 import { NextResponse } from "next/server"
 
+// Mapping from Google Places types to suggested tags
+const TYPE_TO_TAG_MAP: Record<string, string> = {
+  // Restaurants & Food
+  restaurant: "Restaurant",
+  cafe: "Restaurant",
+  bar: "Restaurant",
+  bakery: "Restaurant",
+  meal_delivery: "Restaurant",
+  meal_takeaway: "Restaurant",
+  food: "Restaurant",
+  // Culture
+  museum: "Culture",
+  art_gallery: "Culture",
+  library: "Culture",
+  movie_theater: "Culture",
+  performing_arts_theater: "Culture",
+  // Nature
+  park: "Nature",
+  natural_feature: "Nature",
+  campground: "Nature",
+  rv_park: "Nature",
+  // Accommodation
+  lodging: "Hebergement",
+  hotel: "Hebergement",
+  // Shopping
+  shopping_mall: "Shopping",
+  store: "Shopping",
+  clothing_store: "Shopping",
+  jewelry_store: "Shopping",
+  shoe_store: "Shopping",
+  // Attractions
+  tourist_attraction: "Attraction",
+  amusement_park: "Attraction",
+  aquarium: "Attraction",
+  zoo: "Attraction",
+  // Transport
+  airport: "Transport",
+  train_station: "Transport",
+  bus_station: "Transport",
+  subway_station: "Transport",
+  // Nightlife
+  night_club: "Nightlife",
+  casino: "Nightlife",
+  // Wellness
+  spa: "Wellness",
+  gym: "Wellness",
+  // Beach
+  beach: "Plage",
+}
+
+// Get suggested tag from place types
+function getSuggestedTag(types: string[] | undefined): string | undefined {
+  if (!types || types.length === 0) return undefined
+  for (const type of types) {
+    if (TYPE_TO_TAG_MAP[type]) {
+      return TYPE_TO_TAG_MAP[type]
+    }
+  }
+  return undefined
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get("query")
@@ -71,31 +132,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: data.error.message || "Search failed" }, { status: data.error.code || 500 })
     }
 
-    const places = (data.places || []).map((place: any) => ({
-      id: place.id || `place-${Math.random().toString(36).slice(2)}`,
-      name: place.displayName?.text || "Unknown Place",
-      address: place.formattedAddress || "Address not available",
-      lat: place.location?.latitude || 0,
-      lng: place.location?.longitude || 0,
-      type: place.types?.[0],
-      rating: place.rating,
-      photos: place.photos
-        ? place.photos.slice(0, 5).map(
-            (photo: any) =>
-              `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=400&key=${apiKey}`
-          )
-        : [],
-      isOpen: place.currentOpeningHours?.openNow,
-      // New API returns more details in search results
-      website: place.websiteUri,
-      phone: place.nationalPhoneNumber,
-      priceLevel: place.priceLevel,
-      openingHours: place.regularOpeningHours
-        ? {
-            weekdayText: place.regularOpeningHours.weekdayDescriptions || [],
-          }
-        : null,
-    }))
+    const places = (data.places || []).map((place: any) => {
+      const suggestedTag = getSuggestedTag(place.types)
+      return {
+        id: place.id || `place-${Math.random().toString(36).slice(2)}`,
+        name: place.displayName?.text || "Unknown Place",
+        address: place.formattedAddress || "Address not available",
+        lat: place.location?.latitude || 0,
+        lng: place.location?.longitude || 0,
+        type: place.types?.[0],
+        rating: place.rating,
+        photos: place.photos
+          ? place.photos.slice(0, 5).map(
+              (photo: any) =>
+                `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=400&key=${apiKey}`
+            )
+          : [],
+        isOpen: place.currentOpeningHours?.openNow,
+        // New API returns more details in search results
+        website: place.websiteUri,
+        phone: place.nationalPhoneNumber,
+        priceLevel: place.priceLevel,
+        openingHours: place.regularOpeningHours
+          ? {
+              weekdayText: place.regularOpeningHours.weekdayDescriptions || [],
+            }
+          : null,
+        tags: suggestedTag ? [suggestedTag] : [],
+      }
+    })
 
     return NextResponse.json({ places })
   } catch (error) {

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { GoogleMap } from "./google-map"
 import { PlaceSearch } from "./place-search"
 import { PlaceDetails } from "./place-details"
-import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Moon, CheckCircle2, User, Baby } from "lucide-react"
+import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, CalendarPlus, Clock, Euro, Moon, CheckCircle2, User, Baby, Plus } from "lucide-react"
 import type { Trip, Place, ScheduledEvent, TicketFile } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
@@ -375,72 +375,146 @@ export function DestinationPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex items-center justify-between bg-primary p-4 shadow-md shadow-black/15">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="text-white hover:bg-white/20 hover:text-white">
-            <ArrowLeft className="size-5" />
-          </Button>
-          <VeryDiscoLogo size="sm" />
-          <div className="h-6 w-px bg-white/30" />
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
-              {trip.startDate && trip.endDate && (
-                <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
-                  <Calendar className="size-3.5" />
-                  <span>
-                    {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-                    {' - '}
-                    {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
+        <header className="relative bg-primary shadow-md shadow-black/15">
+          {/* Desktop Header */}
+          <div className="hidden md:flex items-center justify-between p-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="text-white hover:bg-white/20 hover:text-white">
+                <ArrowLeft className="size-5" />
+              </Button>
+              <VeryDiscoLogo size="sm" />
+              <div className="h-6 w-px bg-white/30" />
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-white">{trip.name}</h1>
+                  {trip.startDate && trip.endDate && (
+                    <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
+                      <Calendar className="size-3.5" />
+                      <span>
+                        {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                        {' - '}
+                        {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  )}
+                  {(trip.adults || trip.children) && (
+                    <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
+                      {trip.adults && trip.adults > 0 && (
+                        <div className="flex items-center gap-1">
+                          <User className="size-3.5" />
+                          <span>{trip.adults}</span>
+                        </div>
+                      )}
+                      {trip.children && trip.children > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Baby className="size-3.5" />
+                          <span>{trip.children}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+                {trip.description && <p className="mt-1 text-sm text-white/80">{trip.description}</p>}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {trip.places.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+                  className={showScheduleSidebar ? "border-white bg-white text-primary" : "border-white/50 bg-transparent text-white hover:bg-white/20"}
+                >
+                  <Calendar className="mr-2 size-4" />
+                  Schedule
+                  {(trip.scheduledEvents?.length ?? 0) > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {trip.scheduledEvents?.length}
+                    </Badge>
+                  )}
+                </Button>
               )}
-              {(trip.adults || trip.children) && (
-                <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
-                  {trip.adults && trip.adults > 0 && (
-                    <div className="flex items-center gap-1">
-                      <User className="size-3.5" />
-                      <span>{trip.adults}</span>
-                    </div>
-                  )}
-                  {trip.children && trip.children > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Baby className="size-3.5" />
-                      <span>{trip.children}</span>
-                    </div>
-                  )}
-                </div>
+              {trip.places.length > 0 && (
+                <Button 
+                  onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+                  className="bg-white text-primary hover:bg-white/90"
+                >
+                  {showPlaceSearch ? "Close Search" : "Add Place"}
+                </Button>
               )}
             </div>
-            {trip.description && <p className="mt-1 text-sm text-white/80">{trip.description}</p>}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {trip.places.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
-              className={showScheduleSidebar ? "border-white bg-white text-primary" : "border-white/50 bg-transparent text-white hover:bg-white/20"}
-            >
-              <Calendar className="mr-2 size-4" />
-              Schedule
-              {(trip.scheduledEvents?.length ?? 0) > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {trip.scheduledEvents?.length}
-                </Badge>
-              )}
-            </Button>
-          )}
-          {trip.places.length > 0 && (
-            <Button 
-              onClick={() => setShowPlaceSearch(!showPlaceSearch)}
-              className="bg-white text-primary hover:bg-white/90"
-            >
-              {showPlaceSearch ? "Close Search" : "Add Place"}
-            </Button>
-          )}
-        </div>
-      </header>
+
+          {/* Mobile Header */}
+          <div className="md:hidden">
+            <div className="flex items-center justify-between p-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="shrink-0 text-white hover:bg-white/20 hover:text-white">
+                  <ArrowLeft className="size-5" />
+                </Button>
+                <h1 className="text-lg font-bold text-white truncate">{trip.name}</h1>
+              </div>
+              <div className="flex items-center gap-1">
+                {trip.places.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+                    className={`relative ${showScheduleSidebar ? "bg-white/20 text-white" : "text-white hover:bg-white/20 hover:text-white"}`}
+                  >
+                    <Calendar className="size-5" />
+                    {(trip.scheduledEvents?.length ?? 0) > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 size-4 rounded-full bg-white text-primary text-[10px] font-bold flex items-center justify-center">
+                        {trip.scheduledEvents?.length}
+                      </span>
+                    )}
+                  </Button>
+                )}
+                {trip.places.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+                    className="text-white hover:bg-white/20 hover:text-white"
+                  >
+                    <Plus className="size-5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            {/* Compact info bar */}
+            {(trip.startDate || trip.adults || trip.children) && (
+              <div className="flex items-center gap-3 px-3 pb-2 text-xs text-white/80">
+                {trip.startDate && trip.endDate && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="size-3" />
+                    <span>
+                      {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                      {' - '}
+                      {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                )}
+                {(trip.adults || trip.children) && (
+                  <div className="flex items-center gap-2">
+                    {trip.adults && trip.adults > 0 && (
+                      <div className="flex items-center gap-0.5">
+                        <User className="size-3" />
+                        <span>{trip.adults}</span>
+                      </div>
+                    )}
+                    {trip.children && trip.children > 0 && (
+                      <div className="flex items-center gap-0.5">
+                        <Baby className="size-3" />
+                        <span>{trip.children}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {showPlaceSearch && (

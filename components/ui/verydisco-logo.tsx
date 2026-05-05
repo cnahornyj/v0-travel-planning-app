@@ -11,7 +11,7 @@ export function VeryDiscoLogo({ size = "md", className }: VeryDiscoLogoProps) {
   const sizeClasses = {
     sm: "text-xl",
     md: "text-2xl",
-    lg: "text-4xl",
+    lg: "text-2xl sm:text-4xl",
   }
 
   const globeContainerSizes = {

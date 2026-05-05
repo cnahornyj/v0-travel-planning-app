@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { ChevronDown, ChevronUp, PieChart as PieChartIcon, Euro, MapPin, Trash2 } from "lucide-react"
+import { ChevronDown, PieChart as PieChartIcon, Euro, MapPin, Trash2 } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import { ColorPicker } from "@/components/ui/color-picker"
 import {
@@ -156,46 +156,18 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="overflow-hidden">
         <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex w-full items-center justify-between p-4 hover:bg-accent/50"
+          <button
+            className="flex w-full items-center justify-between p-4 text-left transition-colors"
           >
             <div className="flex items-center gap-3">
               <PieChartIcon className="size-5 text-primary" />
               <span className="font-semibold">Trip Summary</span>
-              <span className="text-sm text-muted-foreground">
-                ({placesCount} places)
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {placesCount} lieu{placesCount > 1 ? "x" : ""}
               </span>
             </div>
-            <div className="flex items-center gap-4">
-              {totalEstimatedCost > 0 && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <Euro className="size-4 text-muted-foreground" />
-                    <span className="font-medium">{totalEstimatedCost.toFixed(2)}</span>
-                    <span className="text-muted-foreground">total</span>
-                  </div>
-                  {amountPaid > 0 && (
-                    <div className="flex items-center gap-1.5 text-green-600">
-                      <span className="font-medium">{amountPaid.toFixed(2)}</span>
-                      <span className="text-green-600/70">payé</span>
-                    </div>
-                  )}
-                  {remainingBalance > 0 && (
-                    <div className="flex items-center gap-1.5 text-orange-600">
-                      <span className="font-medium">{remainingBalance.toFixed(2)}</span>
-                      <span className="text-orange-600/70">reste</span>
-                    </div>
-                  )}
-                </div>
-              )}
-              {isOpen ? (
-                <ChevronUp className="size-5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="size-5 text-muted-foreground" />
-              )}
-            </div>
-          </Button>
+            <ChevronDown className={`size-5 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+          </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
@@ -207,44 +179,79 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
                   <MapPin className="size-4" />
                   Places by Tag
                 </h3>
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={tagData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {tagData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip
-                        content={
-                          <ChartTooltipContent
-                            formatter={(value, name, item) => (
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="size-2.5 rounded-full"
-                                  style={{ backgroundColor: item.payload.color }}
-                                />
-                                <span className="font-medium">{name}</span>
-                                <span className="text-muted-foreground">
-                                  {value} place{Number(value) !== 1 ? "s" : ""} ({item.payload.percentage}%)
-                                </span>
-                              </div>
-                            )}
-                          />
-                        }
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                <div className="relative mx-auto h-[200px] w-[200px]">
+                  {/* Shadow layer for depth effect */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-black/5 to-black/10 blur-xl scale-90" />
+                  
+                  <ChartContainer config={chartConfig} className="relative h-full w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <defs>
+                          {tagData.map((entry, index) => (
+                            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                              <stop offset="100%" stopColor={entry.color} stopOpacity={0.7} />
+                            </linearGradient>
+                          ))}
+                          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15"/>
+                          </filter>
+                        </defs>
+                        <Pie
+                          data={tagData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={85}
+                          paddingAngle={3}
+                          cornerRadius={4}
+                          stroke="none"
+                          style={{ filter: "url(#shadow)" }}
+                        >
+                          {tagData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`url(#gradient-${index})`}
+                              className="transition-all duration-200 hover:opacity-80"
+                              style={{ 
+                                transformOrigin: 'center',
+                                cursor: 'pointer'
+                              }}
+                            />
+                          ))}
+                        </Pie>
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent
+                              formatter={(value, name, item) => (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="size-2.5 rounded-full"
+                                    style={{ backgroundColor: item.payload.color }}
+                                  />
+                                  <span className="font-medium">{name}</span>
+                                  <span className="text-muted-foreground">
+                                    {value} place{Number(value) !== 1 ? "s" : ""} ({item.payload.percentage}%)
+                                  </span>
+                                </div>
+                              )}
+                            />
+                          }
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                  
+                  {/* Center content */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-foreground">{placesCount}</div>
+                      <div className="text-xs text-muted-foreground">lieu{placesCount > 1 ? "x" : ""}</div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Tag Labels with Color Pickers and Delete */}
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
