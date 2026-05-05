@@ -33,6 +33,67 @@ const PLACE_TYPES = [
   { id: "shopping_mall", label: "Shopping", icon: "🛍️" },
 ]
 
+// Mapping from Google Places types to suggested tags
+const TYPE_TO_TAG_MAP: Record<string, string> = {
+  // Restaurants & Food
+  restaurant: "Restaurant",
+  cafe: "Restaurant",
+  bar: "Restaurant",
+  bakery: "Restaurant",
+  meal_delivery: "Restaurant",
+  meal_takeaway: "Restaurant",
+  food: "Restaurant",
+  // Culture
+  museum: "Culture",
+  art_gallery: "Culture",
+  library: "Culture",
+  movie_theater: "Culture",
+  performing_arts_theater: "Culture",
+  // Nature
+  park: "Nature",
+  natural_feature: "Nature",
+  campground: "Nature",
+  rv_park: "Nature",
+  // Accommodation
+  lodging: "Hebergement",
+  hotel: "Hebergement",
+  // Shopping
+  shopping_mall: "Shopping",
+  store: "Shopping",
+  clothing_store: "Shopping",
+  jewelry_store: "Shopping",
+  shoe_store: "Shopping",
+  // Attractions
+  tourist_attraction: "Attraction",
+  amusement_park: "Attraction",
+  aquarium: "Attraction",
+  zoo: "Attraction",
+  // Transport
+  airport: "Transport",
+  train_station: "Transport",
+  bus_station: "Transport",
+  subway_station: "Transport",
+  // Nightlife
+  night_club: "Nightlife",
+  casino: "Nightlife",
+  // Wellness
+  spa: "Wellness",
+  gym: "Wellness",
+  // Beach
+  beach: "Plage",
+}
+
+// Get suggested tag from place types
+function getSuggestedTag(types: string[] | undefined): string | undefined {
+  if (!types || types.length === 0) return undefined
+  for (const type of types) {
+    if (TYPE_TO_TAG_MAP[type]) {
+      return TYPE_TO_TAG_MAP[type]
+    }
+  }
+  return undefined
+}
+
 // Check if the new Places API is available
 function isNewPlacesApiAvailable(): boolean {
   return typeof window !== "undefined" && !!window.google?.maps?.places?.Place?.searchByText
@@ -40,6 +101,7 @@ function isNewPlacesApiAvailable(): boolean {
 
 // Convert a new Place API result to our Place type
 function newPlaceToPlace(place: any): Place {
+  const suggestedTag = getSuggestedTag(place.types)
   return {
     id: place.id || `place-${Math.random().toString(36).slice(2)}`,
     name: place.displayName || "Unknown Place",
@@ -57,6 +119,7 @@ function newPlaceToPlace(place: any): Place {
       ? { weekdayText: place.regularOpeningHours.weekdayDescriptions || [] }
       : undefined,
     editorialSummary: place.editorialSummary,
+    tags: suggestedTag ? [suggestedTag] : [],
   }
 }
 
