@@ -161,11 +161,11 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary px-8 py-6 shadow-md shadow-black/15">
+      <header className="bg-primary px-4 sm:px-8 py-4 sm:py-6 shadow-md shadow-black/15">
         <VeryDiscoLogo size="lg" />
       </header>
 
-      <main className="mx-auto max-w-7xl p-8">
+      <main className="mx-auto max-w-7xl p-4 sm:p-8">
         <div className="mb-8 flex flex-col items-center gap-4">
           <div className="flex flex-col items-center gap-1">
             <AnimatedTagline />
