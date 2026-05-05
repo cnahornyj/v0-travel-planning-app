@@ -446,33 +446,81 @@ export function DestinationPage() {
           </div>
 
           {/* Mobile Header */}
-          <div className="flex md:hidden items-center justify-between p-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="shrink-0 text-white hover:bg-white/20 hover:text-white">
-                <ArrowLeft className="size-5" />
-              </Button>
-              <h1 className="text-lg font-bold text-white truncate">{trip.name}</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              {trip.places.length > 0 && (
+          <div className="md:hidden">
+            <div className="flex items-center justify-between p-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="shrink-0 text-white hover:bg-white/20 hover:text-white">
+                  <ArrowLeft className="size-5" />
+                </Button>
+                <h1 className="text-lg font-bold text-white truncate">{trip.name}</h1>
+              </div>
+              <div className="flex items-center gap-1">
+                {trip.places.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowScheduleSidebar(!showScheduleSidebar)}
+                    className={showScheduleSidebar ? "bg-white/20 text-white" : "text-white hover:bg-white/20 hover:text-white"}
+                  >
+                    <Calendar className="size-5" />
+                    {(trip.scheduledEvents?.length ?? 0) > 0 && (
+                      <span className="absolute -top-1 -right-1 size-4 rounded-full bg-white text-primary text-xs font-bold flex items-center justify-center">
+                        {trip.scheduledEvents?.length}
+                      </span>
+                    )}
+                  </Button>
+                )}
+                {trip.places.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+                    className="text-white hover:bg-white/20 hover:text-white"
+                  >
+                    <Plus className="size-5" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setShowPlaceSearch(!showPlaceSearch)}
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
                   className="text-white hover:bg-white/20 hover:text-white"
                 >
-                  <Plus className="size-5" />
+                  {showMobileMenu ? <X className="size-5" /> : <Menu className="size-5" />}
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="text-white hover:bg-white/20 hover:text-white"
-              >
-                {showMobileMenu ? <X className="size-5" /> : <Menu className="size-5" />}
-              </Button>
+              </div>
             </div>
+            {/* Compact info bar */}
+            {(trip.startDate || trip.adults || trip.children) && (
+              <div className="flex items-center gap-3 px-3 pb-2 text-xs text-white/80">
+                {trip.startDate && trip.endDate && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="size-3" />
+                    <span>
+                      {new Date(trip.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                      {' - '}
+                      {new Date(trip.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                )}
+                {(trip.adults || trip.children) && (
+                  <div className="flex items-center gap-2">
+                    {trip.adults && trip.adults > 0 && (
+                      <div className="flex items-center gap-0.5">
+                        <User className="size-3" />
+                        <span>{trip.adults}</span>
+                      </div>
+                    )}
+                    {trip.children && trip.children > 0 && (
+                      <div className="flex items-center gap-0.5">
+                        <Baby className="size-3" />
+                        <span>{trip.children}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Dropdown */}
