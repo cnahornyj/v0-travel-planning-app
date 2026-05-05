@@ -179,44 +179,79 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
                   <MapPin className="size-4" />
                   Places by Tag
                 </h3>
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={tagData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={45}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {tagData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip
-                        content={
-                          <ChartTooltipContent
-                            formatter={(value, name, item) => (
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="size-2.5 rounded-full"
-                                  style={{ backgroundColor: item.payload.color }}
-                                />
-                                <span className="font-medium">{name}</span>
-                                <span className="text-muted-foreground">
-                                  {value} place{Number(value) !== 1 ? "s" : ""} ({item.payload.percentage}%)
-                                </span>
-                              </div>
-                            )}
-                          />
-                        }
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                <div className="relative mx-auto h-[200px] w-[200px]">
+                  {/* Shadow layer for depth effect */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-black/5 to-black/10 blur-xl scale-90" />
+                  
+                  <ChartContainer config={chartConfig} className="relative h-full w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <defs>
+                          {tagData.map((entry, index) => (
+                            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                              <stop offset="100%" stopColor={entry.color} stopOpacity={0.7} />
+                            </linearGradient>
+                          ))}
+                          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15"/>
+                          </filter>
+                        </defs>
+                        <Pie
+                          data={tagData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={55}
+                          outerRadius={85}
+                          paddingAngle={3}
+                          cornerRadius={4}
+                          stroke="none"
+                          style={{ filter: "url(#shadow)" }}
+                        >
+                          {tagData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`url(#gradient-${index})`}
+                              className="transition-all duration-200 hover:opacity-80"
+                              style={{ 
+                                transformOrigin: 'center',
+                                cursor: 'pointer'
+                              }}
+                            />
+                          ))}
+                        </Pie>
+                        <ChartTooltip
+                          content={
+                            <ChartTooltipContent
+                              formatter={(value, name, item) => (
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="size-2.5 rounded-full"
+                                    style={{ backgroundColor: item.payload.color }}
+                                  />
+                                  <span className="font-medium">{name}</span>
+                                  <span className="text-muted-foreground">
+                                    {value} place{Number(value) !== 1 ? "s" : ""} ({item.payload.percentage}%)
+                                  </span>
+                                </div>
+                              )}
+                            />
+                          }
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                  
+                  {/* Center content */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-foreground">{placesCount}</div>
+                      <div className="text-xs text-muted-foreground">lieu{placesCount > 1 ? "x" : ""}</div>
+                    </div>
+                  </div>
+                </div>
 
                 {/* Tag Labels with Color Pickers and Delete */}
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
