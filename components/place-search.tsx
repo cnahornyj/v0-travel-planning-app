@@ -90,6 +90,7 @@ export function PlaceSearch({
   const [tripSelectionPlace, setTripSelectionPlace] = useState<Place | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isInitializing, setIsInitializing] = useState(false)
+  const [lastDestination, setLastDestination] = useState<string | undefined>(undefined)
 
   // Client-side text search using the new Google Maps Places API
   const clientTextSearch = useCallback(
@@ -169,6 +170,15 @@ export function PlaceSearch({
   }
 
   // Auto-initialize location from destination name
+  useEffect(() => {
+    // Reset initialization when destination changes
+    if (destinationName !== lastDestination) {
+      setLastDestination(destinationName)
+      setIsInitialized(false)
+      setIsInitializing(false)
+    }
+  }, [destinationName, lastDestination])
+
   useEffect(() => {
     if (!destinationName || isInitialized || isInitializing) return
     
