@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { ChevronDown, ChevronUp, PieChart as PieChartIcon, Euro, MapPin, Trash2 } from "lucide-react"
+import { ChevronDown, PieChart as PieChartIcon, Euro, MapPin, Trash2 } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts"
 import { ColorPicker } from "@/components/ui/color-picker"
 import {
@@ -156,46 +156,18 @@ export function TripSummary({ trip, tagColors, onUpdateTagColor, onDeleteTag }: 
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="overflow-hidden">
         <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex w-full items-center justify-between p-4 hover:bg-accent/50"
+          <button
+            className="flex w-full items-center justify-between p-4 text-left transition-colors"
           >
             <div className="flex items-center gap-3">
               <PieChartIcon className="size-5 text-primary" />
               <span className="font-semibold">Trip Summary</span>
-              <span className="text-sm text-muted-foreground">
-                ({placesCount} places)
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {placesCount} lieu{placesCount > 1 ? "x" : ""}
               </span>
             </div>
-            <div className="flex items-center gap-4">
-              {totalEstimatedCost > 0 && (
-                <div className="flex items-center gap-3 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <Euro className="size-4 text-muted-foreground" />
-                    <span className="font-medium">{totalEstimatedCost.toFixed(2)}</span>
-                    <span className="text-muted-foreground">total</span>
-                  </div>
-                  {amountPaid > 0 && (
-                    <div className="flex items-center gap-1.5 text-green-600">
-                      <span className="font-medium">{amountPaid.toFixed(2)}</span>
-                      <span className="text-green-600/70">payé</span>
-                    </div>
-                  )}
-                  {remainingBalance > 0 && (
-                    <div className="flex items-center gap-1.5 text-orange-600">
-                      <span className="font-medium">{remainingBalance.toFixed(2)}</span>
-                      <span className="text-orange-600/70">reste</span>
-                    </div>
-                  )}
-                </div>
-              )}
-              {isOpen ? (
-                <ChevronUp className="size-5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="size-5 text-muted-foreground" />
-              )}
-            </div>
-          </Button>
+            <ChevronDown className={`size-5 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+          </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
