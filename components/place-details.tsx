@@ -627,13 +627,6 @@ export function PlaceDetails({
             )}
 
             <div className="flex flex-wrap items-center gap-2">
-              {detailedPlace.rating && (
-                <div className="flex items-center gap-1">
-                  <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{detailedPlace.rating}</span>
-                </div>
-              )}
-
               {detailedPlace.isOpen !== undefined && (
                 <Badge variant={detailedPlace.isOpen ? "default" : "secondary"}>
                   {detailedPlace.isOpen ? "Ouvert" : "Fermé"}
@@ -654,179 +647,187 @@ export function PlaceDetails({
               </div>
             )}
 
-            {/* User Rating */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Star className="size-4" />
-                <span className="text-sm font-medium">Ma note:</span>
+            {/* Google Rating + User Rating side by side */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Google Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                  <span className="text-sm font-medium">Note Google:</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {detailedPlace.rating ? `${detailedPlace.rating}/5` : "Non disponible"}
+                </p>
               </div>
-              <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => {
-                      if (onUpdateUserRating) {
-                        // Toggle off if clicking the same rating
-                        const newRating = detailedPlace.userRating === star ? undefined : star
-                        setDetailedPlace((prev) => ({ ...prev, userRating: newRating }))
-                        onUpdateUserRating(detailedPlace.id, newRating)
-                      }
-                    }}
-                    className={`transition-colors ${onUpdateUserRating ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
-                    disabled={!onUpdateUserRating}
-                    title={onUpdateUserRating ? `Noter ${star} étoile${star > 1 ? "s" : ""}` : undefined}
-                  >
-                    <Star
-                      className={`size-6 ${
-                        detailedPlace.userRating && star <= detailedPlace.userRating
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-muted-foreground/40"
-                      }`}
-                    />
-                  </button>
-                ))}
-                {detailedPlace.userRating && (
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    {detailedPlace.userRating}/5
-                  </span>
-                )}
-                {!detailedPlace.userRating && (
-                  <span className="ml-2 text-sm text-muted-foreground">Non noté</span>
-                )}
+
+              {/* User Rating */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Star className="size-4" />
+                  <span className="text-sm font-medium">Ma note:</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onClick={() => {
+                        if (onUpdateUserRating) {
+                          const newRating = detailedPlace.userRating === star ? undefined : star
+                          setDetailedPlace((prev) => ({ ...prev, userRating: newRating }))
+                          onUpdateUserRating(detailedPlace.id, newRating)
+                        }
+                      }}
+                      className={`transition-colors ${onUpdateUserRating ? "cursor-pointer hover:scale-110" : "cursor-default"}`}
+                      disabled={!onUpdateUserRating}
+                      title={onUpdateUserRating ? `Noter ${star} étoile${star > 1 ? "s" : ""}` : undefined}
+                    >
+                      <Star
+                        className={`size-5 ${
+                          detailedPlace.userRating && star <= detailedPlace.userRating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-muted-foreground/40"
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {formatOpeningHours()}
 
-            {/* Estimated Visit Duration */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="size-4" />
-                  <span className="text-sm font-medium">Durée estimée de visite:</span>
+            {/* Estimated Visit Duration + Price side by side */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Estimated Visit Duration */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-4" />
+                    <span className="text-sm font-medium">Durée:</span>
+                  </div>
+                  {onUpdateEstimatedDuration && !isEditingDuration && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() => {
+                        setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
+                        setIsEditingDuration(true)
+                      }}
+                    >
+                      <Edit2 className="size-3" />
+                    </Button>
+                  )}
                 </div>
-                {onUpdateEstimatedDuration && !isEditingDuration && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => {
-                      setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
-                      setIsEditingDuration(true)
-                    }}
-                  >
-                    <Edit2 className="size-3" />
-                  </Button>
-                )}
-              </div>
 
-              {isEditingDuration ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={15}
-                    placeholder="Ex: 120"
-                    value={durationValue}
-                    onChange={(e) => setDurationValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUpdateEstimatedDuration()
-                      } else if (e.key === "Escape") {
+                {isEditingDuration ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={15}
+                      placeholder="120"
+                      value={durationValue}
+                      onChange={(e) => setDurationValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleUpdateEstimatedDuration()
+                        } else if (e.key === "Escape") {
+                          setIsEditingDuration(false)
+                          setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
+                        }
+                      }}
+                      className="w-20 text-sm"
+                      autoFocus
+                    />
+                    <span className="text-xs text-muted-foreground">min</span>
+                    <Button onClick={handleUpdateEstimatedDuration} size="sm" className="h-7 px-2">
+                      <Check className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => {
                         setIsEditingDuration(false)
                         setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
-                      }
-                    }}
-                    className="w-24 text-sm"
-                    autoFocus
-                  />
-                  <span className="text-sm text-muted-foreground">minutes</span>
-                  <Button onClick={handleUpdateEstimatedDuration} size="sm">
-                    <Check className="mr-1 size-3" />
-                    OK
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingDuration(false)
-                      setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
-                    }}
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {detailedPlace.estimatedDuration
-                    ? detailedPlace.estimatedDuration >= 60
-                      ? `${Math.floor(detailedPlace.estimatedDuration / 60)}h${detailedPlace.estimatedDuration % 60 > 0 ? ` ${detailedPlace.estimatedDuration % 60}min` : ""}`
-                      : `${detailedPlace.estimatedDuration} minutes`
-                    : "Non défini"}
-                </p>
-              )}
-            </div>
-
-            {/* Price */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Euro className="size-4" />
-                  <span className="text-sm font-medium">Prix:</span>
-                </div>
-                {onUpdatePrice && !isEditingPrice && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    onClick={() => {
-                      setPriceValue(detailedPlace.price || "")
-                      setIsEditingPrice(true)
-                    }}
-                  >
-                    <Edit2 className="size-3" />
-                  </Button>
+                      }}
+                    >
+                      <X className="size-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {detailedPlace.estimatedDuration
+                      ? detailedPlace.estimatedDuration >= 60
+                        ? `${Math.floor(detailedPlace.estimatedDuration / 60)}h${detailedPlace.estimatedDuration % 60 > 0 ? ` ${detailedPlace.estimatedDuration % 60}min` : ""}`
+                        : `${detailedPlace.estimatedDuration} min`
+                      : "Non defini"}
+                  </p>
                 )}
               </div>
 
-              {isEditingPrice ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    placeholder="Ex: 15€, Gratuit, 10-20€"
-                    value={priceValue}
-                    onChange={(e) => setPriceValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUpdatePrice()
-                      } else if (e.key === "Escape") {
+              {/* Price */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Euro className="size-4" />
+                    <span className="text-sm font-medium">Prix:</span>
+                  </div>
+                  {onUpdatePrice && !isEditingPrice && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-6"
+                      onClick={() => {
+                        setPriceValue(detailedPlace.price || "")
+                        setIsEditingPrice(true)
+                      }}
+                    >
+                      <Edit2 className="size-3" />
+                    </Button>
+                  )}
+                </div>
+
+                {isEditingPrice ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      type="text"
+                      placeholder="15€"
+                      value={priceValue}
+                      onChange={(e) => setPriceValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleUpdatePrice()
+                        } else if (e.key === "Escape") {
+                          setIsEditingPrice(false)
+                          setPriceValue(detailedPlace.price || "")
+                        }
+                      }}
+                      className="w-20 text-sm"
+                      autoFocus
+                    />
+                    <Button onClick={handleUpdatePrice} size="sm" className="h-7 px-2">
+                      <Check className="size-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => {
                         setIsEditingPrice(false)
                         setPriceValue(detailedPlace.price || "")
-                      }
-                    }}
-                    className="flex-1 text-sm"
-                    autoFocus
-                  />
-                  <Button onClick={handleUpdatePrice} size="sm">
-                    <Check className="mr-1 size-3" />
-                    OK
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsEditingPrice(false)
-                      setPriceValue(detailedPlace.price || "")
-                    }}
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {detailedPlace.price || "Non défini"}
-                </p>
-              )}
+                      }}
+                    >
+                      <X className="size-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {detailedPlace.price || "Non defini"}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
