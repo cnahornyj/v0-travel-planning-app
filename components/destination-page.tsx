@@ -397,7 +397,7 @@ export function DestinationPage() {
                       </span>
                     </div>
                   )}
-                  {(trip.adults || trip.children) && (
+                  {(trip.adults && trip.adults > 0) || (trip.children && trip.children > 0) ? (
                     <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
                       {trip.adults && trip.adults > 0 && (
                         <div className="flex items-center gap-1">
@@ -412,7 +412,7 @@ export function DestinationPage() {
                         </div>
                       )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 {trip.description && <p className="mt-1 text-sm text-white/80">{trip.description}</p>}
               </div>
@@ -494,7 +494,7 @@ export function DestinationPage() {
                     </span>
                   </div>
                 )}
-                {(trip.adults || trip.children) && (
+                {((trip.adults && trip.adults > 0) || (trip.children && trip.children > 0)) && (
                   <div className="flex items-center gap-2">
                     {trip.adults && trip.adults > 0 && (
                       <div className="flex items-center gap-0.5">

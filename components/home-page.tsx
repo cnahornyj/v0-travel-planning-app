@@ -256,8 +256,23 @@ export function HomePage() {
                   id="adults"
                   type="number"
                   min="1"
-                  value={newTrip.adults}
-                  onChange={(e) => setNewTrip({ ...newTrip, adults: parseInt(e.target.value) || 1 })}
+                  value={newTrip.adults === 0 ? "" : newTrip.adults}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    if (value === "") {
+                      setNewTrip({ ...newTrip, adults: 0 })
+                    } else {
+                      const num = parseInt(value)
+                      if (!isNaN(num) && num >= 0) {
+                        setNewTrip({ ...newTrip, adults: num })
+                      }
+                    }
+                  }}
+                  onBlur={() => {
+                    if (newTrip.adults < 1) {
+                      setNewTrip({ ...newTrip, adults: 1 })
+                    }
+                  }}
                 />
               </div>
               <div>
@@ -349,8 +364,23 @@ export function HomePage() {
                     id="edit-adults"
                     type="number"
                     min="1"
-                    value={tripToEdit.adults || 1}
-                    onChange={(e) => setTripToEdit({ ...tripToEdit, adults: parseInt(e.target.value) || 1 })}
+                    value={tripToEdit.adults === 0 ? "" : (tripToEdit.adults || "")}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value === "") {
+                        setTripToEdit({ ...tripToEdit, adults: 0 })
+                      } else {
+                        const num = parseInt(value)
+                        if (!isNaN(num) && num >= 0) {
+                          setTripToEdit({ ...tripToEdit, adults: num })
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!tripToEdit.adults || tripToEdit.adults < 1) {
+                        setTripToEdit({ ...tripToEdit, adults: 1 })
+                      }
+                    }}
                   />
                 </div>
                 <div>
