@@ -482,7 +482,7 @@ export function DestinationPage() {
               </div>
             </div>
             {/* Compact info bar */}
-            {(trip.startDate || trip.adults || trip.children) && (
+            {(trip.startDate || (trip.adults && trip.adults > 0) || (trip.children && trip.children > 0)) && (
               <div className="flex items-center gap-3 px-3 pb-2 text-xs text-white/80">
                 {trip.startDate && trip.endDate && (
                   <div className="flex items-center gap-1">
