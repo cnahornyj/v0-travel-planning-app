@@ -826,37 +826,49 @@ const handleUpdateEstimatedDuration = async () => {
                 </div>
 
                 {isEditingPrice ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Input
-                      type="text"
-                      placeholder="15€"
-                      value={priceValue}
-                      onChange={(e) => setPriceValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleUpdatePrice()
-                        } else if (e.key === "Escape") {
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        placeholder="15€"
+                        value={priceValue}
+                        onChange={(e) => setPriceValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdatePrice()
+                          } else if (e.key === "Escape") {
+                            setIsEditingPrice(false)
+                            setPriceValue(detailedPlace.price || "")
+                          }
+                        }}
+                        className="w-20 text-sm"
+                        autoFocus
+                      />
+                      <Button 
+                        variant={priceValue === "Gratuit" ? "default" : "outline"} 
+                        size="sm" 
+                        className="h-8 text-xs"
+                        onClick={() => setPriceValue("Gratuit")}
+                      >
+                        Gratuit
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button onClick={handleUpdatePrice} size="sm" className="h-7 px-2">
+                        <Check className="size-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => {
                           setIsEditingPrice(false)
                           setPriceValue(detailedPlace.price || "")
-                        }
-                      }}
-                      className="w-20 text-sm"
-                      autoFocus
-                    />
-                    <Button onClick={handleUpdatePrice} size="sm" className="h-7 px-2">
-                      <Check className="size-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      onClick={() => {
-                        setIsEditingPrice(false)
-                        setPriceValue(detailedPlace.price || "")
-                      }}
-                    >
-                      <X className="size-3" />
-                    </Button>
+                        }}
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
