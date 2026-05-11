@@ -397,22 +397,22 @@ export function DestinationPage() {
                       </span>
                     </div>
                   )}
-                  {(trip.adults || trip.children) && (
+                  {(Number(trip.adults) > 0 || Number(trip.children) > 0) ? (
                     <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
-                      {trip.adults && trip.adults > 0 && (
+                      {Number(trip.adults) > 0 && (
                         <div className="flex items-center gap-1">
                           <User className="size-3.5" />
                           <span>{trip.adults}</span>
                         </div>
                       )}
-                      {trip.children && trip.children > 0 && (
+                      {Number(trip.children) > 0 && (
                         <div className="flex items-center gap-1">
                           <Baby className="size-3.5" />
                           <span>{trip.children}</span>
                         </div>
                       )}
                     </div>
-                  )}
+                  ) : null}
                 </div>
                 {trip.description && <p className="mt-1 text-sm text-white/80">{trip.description}</p>}
               </div>
@@ -482,7 +482,7 @@ export function DestinationPage() {
               </div>
             </div>
             {/* Compact info bar */}
-            {(trip.startDate || trip.adults || trip.children) && (
+            {(trip.startDate || (trip.adults && trip.adults > 0) || (trip.children && trip.children > 0)) && (
               <div className="flex items-center gap-3 px-3 pb-2 text-xs text-white/80">
                 {trip.startDate && trip.endDate && (
                   <div className="flex items-center gap-1">
@@ -494,15 +494,15 @@ export function DestinationPage() {
                     </span>
                   </div>
                 )}
-                {(trip.adults || trip.children) && (
+                {(Number(trip.adults) > 0 || Number(trip.children) > 0) && (
                   <div className="flex items-center gap-2">
-                    {trip.adults && trip.adults > 0 && (
+                    {Number(trip.adults) > 0 && (
                       <div className="flex items-center gap-0.5">
                         <User className="size-3" />
                         <span>{trip.adults}</span>
                       </div>
                     )}
-                    {trip.children && trip.children > 0 && (
+                    {Number(trip.children) > 0 && (
                       <div className="flex items-center gap-0.5">
                         <Baby className="size-3" />
                         <span>{trip.children}</span>

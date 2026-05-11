@@ -257,7 +257,13 @@ export function HomePage() {
                   type="number"
                   min="1"
                   value={newTrip.adults}
-                  onChange={(e) => setNewTrip({ ...newTrip, adults: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const num = parseInt(value)
+                    if (value === "" || (!isNaN(num) && num >= 1)) {
+                      setNewTrip({ ...newTrip, adults: value === "" ? 1 : num })
+                    }
+                  }}
                 />
               </div>
               <div>
@@ -350,7 +356,13 @@ export function HomePage() {
                     type="number"
                     min="1"
                     value={tripToEdit.adults || 1}
-                    onChange={(e) => setTripToEdit({ ...tripToEdit, adults: parseInt(e.target.value) || 1 })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      const num = parseInt(value)
+                      if (value === "" || (!isNaN(num) && num >= 1)) {
+                        setTripToEdit({ ...tripToEdit, adults: value === "" ? 1 : num })
+                      }
+                    }}
                   />
                 </div>
                 <div>
