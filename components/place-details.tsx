@@ -98,7 +98,12 @@ export function PlaceDetails({
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState(detailedPlace.name)
   const [isEditingDuration, setIsEditingDuration] = useState(false)
-  const [durationValue, setDurationValue] = useState(detailedPlace.estimatedDuration?.toString() || "")
+  const [durationHours, setDurationHours] = useState(() => 
+    detailedPlace.estimatedDuration ? Math.floor(detailedPlace.estimatedDuration / 60).toString() : ""
+  )
+  const [durationMinutes, setDurationMinutes] = useState(() => 
+    detailedPlace.estimatedDuration ? (detailedPlace.estimatedDuration % 60).toString() : ""
+  )
   const [isEditingPrice, setIsEditingPrice] = useState(false)
   const [priceValue, setPriceValue] = useState(detailedPlace.price || "")
   const [isUploadingTicketFile, setIsUploadingTicketFile] = useState(false)
@@ -134,11 +139,16 @@ export function PlaceDetails({
     }
   }
 
-  const handleUpdateEstimatedDuration = async () => {
-    if (!onUpdateEstimatedDuration) return
-
-    const mins = durationValue.trim() ? parseInt(durationValue.trim(), 10) : undefined
-    if (durationValue.trim() && (isNaN(mins!) || mins! <= 0)) return
+const handleUpdateEstimatedDuration = async () => {
+  if (!onUpdateEstimatedDuration) return
+  
+  const hours = durationHours.trim() ? parseInt(durationHours.trim(), 10) : 0
+  const minutes = durationMinutes.trim() ? parseInt(durationMinutes.trim(), 10) : 0
+  
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0 || minutes > 59) return
+  
+  const totalMinutes = hours * 60 + minutes
+  const mins = totalMinutes > 0 ? totalMinutes : undefined
 
     setDetailedPlace((prev) => ({ ...prev, estimatedDuration: mins }))
 
@@ -711,7 +721,8 @@ export function PlaceDetails({
                       size="icon"
                       className="size-6"
                       onClick={() => {
-                        setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
+                        setDurationHours(detailedPlace.estimatedDuration ? Math.floor(detailedPlace.estimatedDuration / 60).toString() : "")
+                        setDurationMinutes(detailedPlace.estimatedDuration ? (detailedPlace.estimatedDuration % 60).toString() : "")
                         setIsEditingDuration(true)
                       }}
                     >
@@ -721,40 +732,65 @@ export function PlaceDetails({
                 </div>
 
                 {isEditingDuration ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      step={15}
-                      placeholder="120"
-                      value={durationValue}
-                      onChange={(e) => setDurationValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleUpdateEstimatedDuration()
-                        } else if (e.key === "Escape") {
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={23}
+                        placeholder="0"
+                        value={durationHours}
+                        onChange={(e) => setDurationHours(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdateEstimatedDuration()
+                          } else if (e.key === "Escape") {
+                            setIsEditingDuration(false)
+                            setDurationHours(detailedPlace.estimatedDuration ? Math.floor(detailedPlace.estimatedDuration / 60).toString() : "")
+                            setDurationMinutes(detailedPlace.estimatedDuration ? (detailedPlace.estimatedDuration % 60).toString() : "")
+                          }
+                        }}
+                        className="w-14 text-sm"
+                        autoFocus
+                      />
+                      <span className="text-xs text-muted-foreground">h</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={59}
+                        placeholder="0"
+                        value={durationMinutes}
+                        onChange={(e) => setDurationMinutes(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleUpdateEstimatedDuration()
+                          } else if (e.key === "Escape") {
+                            setIsEditingDuration(false)
+                            setDurationHours(detailedPlace.estimatedDuration ? Math.floor(detailedPlace.estimatedDuration / 60).toString() : "")
+                            setDurationMinutes(detailedPlace.estimatedDuration ? (detailedPlace.estimatedDuration % 60).toString() : "")
+                          }
+                        }}
+                        className="w-14 text-sm"
+                      />
+                      <span className="text-xs text-muted-foreground">min</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button onClick={handleUpdateEstimatedDuration} size="sm" className="h-7 px-2">
+                        <Check className="size-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => {
                           setIsEditingDuration(false)
-                          setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
-                        }
-                      }}
-                      className="w-20 text-sm"
-                      autoFocus
-                    />
-                    <span className="text-xs text-muted-foreground">min</span>
-                    <Button onClick={handleUpdateEstimatedDuration} size="sm" className="h-7 px-2">
-                      <Check className="size-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      onClick={() => {
-                        setIsEditingDuration(false)
-                        setDurationValue(detailedPlace.estimatedDuration?.toString() || "")
-                      }}
-                    >
-                      <X className="size-3" />
-                    </Button>
+                          setDurationHours(detailedPlace.estimatedDuration ? Math.floor(detailedPlace.estimatedDuration / 60).toString() : "")
+                          setDurationMinutes(detailedPlace.estimatedDuration ? (detailedPlace.estimatedDuration % 60).toString() : "")
+                        }}
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
