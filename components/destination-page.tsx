@@ -397,15 +397,15 @@ export function DestinationPage() {
                       </span>
                     </div>
                   )}
-                  {(trip.adults && trip.adults > 0) || (trip.children && trip.children > 0) ? (
+                  {(Number(trip.adults) > 0 || Number(trip.children) > 0) ? (
                     <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-sm text-white">
-                      {trip.adults && trip.adults > 0 && (
+                      {Number(trip.adults) > 0 && (
                         <div className="flex items-center gap-1">
                           <User className="size-3.5" />
                           <span>{trip.adults}</span>
                         </div>
                       )}
-                      {trip.children && trip.children > 0 && (
+                      {Number(trip.children) > 0 && (
                         <div className="flex items-center gap-1">
                           <Baby className="size-3.5" />
                           <span>{trip.children}</span>
@@ -494,15 +494,15 @@ export function DestinationPage() {
                     </span>
                   </div>
                 )}
-                {((trip.adults && trip.adults > 0) || (trip.children && trip.children > 0)) && (
+                {(Number(trip.adults) > 0 || Number(trip.children) > 0) && (
                   <div className="flex items-center gap-2">
-                    {trip.adults && trip.adults > 0 && (
+                    {Number(trip.adults) > 0 && (
                       <div className="flex items-center gap-0.5">
                         <User className="size-3" />
                         <span>{trip.adults}</span>
                       </div>
                     )}
-                    {trip.children && trip.children > 0 && (
+                    {Number(trip.children) > 0 && (
                       <div className="flex items-center gap-0.5">
                         <Baby className="size-3" />
                         <span>{trip.children}</span>
