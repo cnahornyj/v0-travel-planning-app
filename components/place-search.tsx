@@ -94,9 +94,25 @@ function getSuggestedTag(types: string[] | undefined): string | undefined {
   return undefined
 }
 
-// Check if the new Places API is available
-function isNewPlacesApiAvailable(): boolean {
-  return typeof window !== "undefined" && !!window.google?.maps?.places?.Place?.searchByText
+// The Maps script is injected asynchronously by GoogleMap, so searches can fire before it is ready.
+async function waitForGoogleMaps(timeoutMs = 10000): Promise<boolean> {
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    if (typeof window !== "undefined" && window.google?.maps) return true
+    await new Promise((resolve) => setTimeout(resolve, 200))
+  }
+  return false
+}
+
+async function getPlaceClass(): Promise<any | null> {
+  if (!(await waitForGoogleMaps())) return null
+  const maps: any = window.google.maps
+  if (maps.places?.Place?.searchByText) return maps.places.Place
+  if (typeof maps.importLibrary === "function") {
+    const placesLib = await maps.importLibrary("places")
+    if (placesLib?.Place?.searchByText) return placesLib.Place
+  }
+  return null
 }
 
 // Convert a new Place API result to our Place type
@@ -158,12 +174,13 @@ export function PlaceSearch({
   // Client-side text search using the new Google Maps Places API
   const clientTextSearch = useCallback(
     async (query: string, location?: { lat: number; lng: number }): Promise<Place[]> => {
-      if (!isNewPlacesApiAvailable()) {
-        console.error("[v0] Google Maps Place.searchByText not available")
-        return []
-      }
-
       try {
+        const PlaceClass = await getPlaceClass()
+        if (!PlaceClass) {
+          console.error("Google Maps Place.searchByText not available")
+          return []
+        }
+
         const request: any = {
           textQuery: query,
           fields: [
@@ -190,7 +207,7 @@ export function PlaceSearch({
           }
         }
 
-        const { places } = await window.google.maps.places.Place.searchByText(request)
+        const { places } = await PlaceClass.searchByText(request)
         return (places || []).map((place: any) => newPlaceToPlace(place))
       } catch (error) {
         console.error("[v0] Error in Place.searchByText:", error)
