@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Search, MapPin, Star, Plus, Globe, Calendar, PlusCircle, Info } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import type { Place, Trip } from "./travel-planner"
+import { getPlacesLibrary, loadGoogleMaps } from "@/lib/google-maps-loader"
 
 interface PlaceSearchProps {
   onPlaceSelect: (place: Place) => void
@@ -94,26 +95,7 @@ function getSuggestedTag(types: string[] | undefined): string | undefined {
   return undefined
 }
 
-// The Maps script is injected asynchronously by GoogleMap, so searches can fire before it is ready.
-async function waitForGoogleMaps(timeoutMs = 10000): Promise<boolean> {
-  const start = Date.now()
-  while (Date.now() - start < timeoutMs) {
-    if (typeof window !== "undefined" && window.google?.maps) return true
-    await new Promise((resolve) => setTimeout(resolve, 200))
-  }
-  return false
-}
-
-async function getPlaceClass(): Promise<any | null> {
-  if (!(await waitForGoogleMaps())) return null
-  const maps: any = window.google.maps
-  if (maps.places?.Place?.searchByText) return maps.places.Place
-  if (typeof maps.importLibrary === "function") {
-    const placesLib = await maps.importLibrary("places")
-    if (placesLib?.Place?.searchByText) return placesLib.Place
-  }
-  return null
-}
+const getPlaceClass = getPlacesLibrary
 
 // Convert a new Place API result to our Place type
 function newPlaceToPlace(place: any): Place {
@@ -262,15 +244,14 @@ export function PlaceSearch({
   useEffect(() => {
     if (!destinationName || isInitialized || isInitializing) return
     
-    // Wait for Google Maps to be available
     const checkAndInit = async () => {
-      if (typeof window === "undefined" || !window.google?.maps?.places) {
-        // Retry after a short delay
-        setTimeout(checkAndInit, 300)
+      setIsInitializing(true)
+      try {
+        await loadGoogleMaps()
+      } catch {
+        setIsInitializing(false)
         return
       }
-      
-      setIsInitializing(true)
       await searchLocation(destinationName, true)
       setIsInitialized(true)
       setIsInitializing(false)
