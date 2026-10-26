@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { Place } from "./travel-planner"
+import { loadGoogleMaps } from "@/lib/google-maps-loader"
 
 declare global {
   interface Window {
@@ -59,37 +60,17 @@ export function GoogleMap({ center, selectedPlace, savedPlaces, onPlaceSelect }:
   const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.google?.maps) {
-      fetch("/api/maps-config")
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to fetch maps configuration")
-          return res.json()
-        })
-        .then((data) => {
-          const script = document.createElement("script")
-          script.src = data.scriptUrl
-          script.async = true
-          script.defer = true
-          script.onload = () => {
-            setTimeout(() => {
-              if (window.google?.maps) {
-                setIsLoaded(true)
-              } else {
-                setLoadError("Google Maps failed to initialize")
-              }
-            }, 100)
-          }
-          script.onerror = () => {
-            setLoadError("Failed to load Google Maps script")
-          }
-          document.head.appendChild(script)
-        })
-        .catch((error) => {
-          console.error("Failed to load Google Maps configuration:", error)
-          setLoadError(error.message)
-        })
-    } else if (typeof window !== "undefined" && window.google?.maps) {
-      setIsLoaded(true)
+    let cancelled = false
+    loadGoogleMaps()
+      .then(() => {
+        if (!cancelled) setIsLoaded(true)
+      })
+      .catch((error) => {
+        console.error("Failed to load Google Maps:", error)
+        if (!cancelled) setLoadError(error.message)
+      })
+    return () => {
+      cancelled = true
     }
   }, [])
 

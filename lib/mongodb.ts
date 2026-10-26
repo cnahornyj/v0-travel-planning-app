@@ -1,56 +1,31 @@
 import { MongoClient } from "mongodb"
 
 if (!process.env.MONGODB_URI) {
-  console.error("[v0] MONGODB_URI is not defined in environment variables")
   throw new Error("Please add your MONGODB_URI to environment variables")
 }
 
 const uri = process.env.MONGODB_URI
-const options = {}
 
-console.log("[v0] MongoDB URI configured:", uri.substring(0, 20) + "...")
+// Cached on globalThis so dev hot reloads reuse the same connection.
+const globalWithMongo = globalThis as typeof globalThis & {
+  _mongoConnection?: Promise<MongoClient>
+}
 
-let client: MongoClient
-let clientPromise: Promise<MongoClient>
-
-if (process.env.NODE_ENV === "development") {
-  const globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>
-  }
-
-  if (!globalWithMongo._mongoClientPromise) {
-    console.log("[v0] Creating new MongoDB client (development)")
-    client = new MongoClient(uri, options)
-    globalWithMongo._mongoClientPromise = client
-      .connect()
-      .then((client) => {
-        console.log("[v0] MongoDB connected successfully (development)")
-        return client
-      })
-      .catch((error) => {
-        console.error("[v0] MongoDB connection failed (development):", error)
-        throw error
-      })
-  }
-  clientPromise = globalWithMongo._mongoClientPromise
-} else {
-  console.log("[v0] Creating new MongoDB client (production)")
-  client = new MongoClient(uri, options)
-  clientPromise = client
-    .connect()
-    .then((client) => {
-      console.log("[v0] MongoDB connected successfully (production)")
-      return client
-    })
-    .catch((error) => {
-      console.error("[v0] MongoDB connection failed (production):", error)
-      console.error("[v0] Connection error details:", {
-        name: error.name,
-        message: error.message,
-        code: error.code,
-      })
+function getClient(): Promise<MongoClient> {
+  if (!globalWithMongo._mongoConnection) {
+    globalWithMongo._mongoConnection = new MongoClient(uri).connect().catch((error) => {
+      // Drop the rejected promise so the next request retries instead of
+      // failing forever (e.g. after an Atlas cluster is paused then resumed).
+      globalWithMongo._mongoConnection = undefined
+      console.error("MongoDB connection failed:", error)
       throw error
     })
+  }
+  return globalWithMongo._mongoConnection
+}
+
+const clientPromise: PromiseLike<MongoClient> = {
+  then: (onFulfilled, onRejected) => getClient().then(onFulfilled, onRejected),
 }
 
 export default clientPromise

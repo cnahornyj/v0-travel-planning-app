@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Search, MapPin, Star, Plus, Globe, Calendar, PlusCircle, Info } from "lucide-react"
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import type { Place, Trip } from "./travel-planner"
+import { getPlacesLibrary, loadGoogleMaps } from "@/lib/google-maps-loader"
 
 interface PlaceSearchProps {
   onPlaceSelect: (place: Place) => void
@@ -94,10 +95,7 @@ function getSuggestedTag(types: string[] | undefined): string | undefined {
   return undefined
 }
 
-// Check if the new Places API is available
-function isNewPlacesApiAvailable(): boolean {
-  return typeof window !== "undefined" && !!window.google?.maps?.places?.Place?.searchByText
-}
+const getPlaceClass = getPlacesLibrary
 
 // Convert a new Place API result to our Place type
 function newPlaceToPlace(place: any): Place {
@@ -158,12 +156,13 @@ export function PlaceSearch({
   // Client-side text search using the new Google Maps Places API
   const clientTextSearch = useCallback(
     async (query: string, location?: { lat: number; lng: number }): Promise<Place[]> => {
-      if (!isNewPlacesApiAvailable()) {
-        console.error("[v0] Google Maps Place.searchByText not available")
-        return []
-      }
-
       try {
+        const PlaceClass = await getPlaceClass()
+        if (!PlaceClass) {
+          console.error("Google Maps Place.searchByText not available")
+          return []
+        }
+
         const request: any = {
           textQuery: query,
           fields: [
@@ -190,7 +189,7 @@ export function PlaceSearch({
           }
         }
 
-        const { places } = await window.google.maps.places.Place.searchByText(request)
+        const { places } = await PlaceClass.searchByText(request)
         return (places || []).map((place: any) => newPlaceToPlace(place))
       } catch (error) {
         console.error("[v0] Error in Place.searchByText:", error)
@@ -245,15 +244,14 @@ export function PlaceSearch({
   useEffect(() => {
     if (!destinationName || isInitialized || isInitializing) return
     
-    // Wait for Google Maps to be available
     const checkAndInit = async () => {
-      if (typeof window === "undefined" || !window.google?.maps?.places) {
-        // Retry after a short delay
-        setTimeout(checkAndInit, 300)
+      setIsInitializing(true)
+      try {
+        await loadGoogleMaps()
+      } catch {
+        setIsInitializing(false)
         return
       }
-      
-      setIsInitializing(true)
       await searchLocation(destinationName, true)
       setIsInitialized(true)
       setIsInitializing(false)
