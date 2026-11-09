@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { generateText, Output } from "ai"
+import { APICallError, generateText, Output, RetryError } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { z } from "zod"
 
@@ -165,9 +165,17 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("[v0] Place enrichment AI error:", error)
       if (Object.keys(suggestions).length === 0) {
+        const cause = RetryError.isInstance(error) ? error.lastError : error
+        const status = APICallError.isInstance(cause) ? cause.statusCode : undefined
         const message = !geminiApiKey
           ? "L'IA n'est pas configurée : ajoutez la clé Gemini dans la variable API."
-          : "L'IA n'a pas pu compléter ce lieu"
+          : status === 402
+            ? "Crédits Gemini épuisés : rechargez votre projet sur Google AI Studio."
+            : status === 429
+              ? "Quota Gemini atteint, réessayez dans quelques instants."
+              : status === 401 || status === 403
+                ? "Clé Gemini refusée : vérifiez la variable API."
+                : "L'IA n'a pas pu compléter ce lieu"
         return NextResponse.json({ error: message }, { status: 502 })
       }
     }
