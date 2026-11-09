@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import type { Place, Trip, TicketFile } from "./travel-planner"
 import { ColorPicker } from "@/components/ui/color-picker"
+import { PlaceEnrichment } from "./place-enrichment"
 
 interface PlaceDetailsProps {
   place: Place
@@ -45,6 +46,7 @@ interface PlaceDetailsProps {
   existingTags?: string[]
   onUpdateTagColor?: (tag: string, color: string) => void
   onUpdateUserRating?: (placeId: string, rating: number | undefined) => void
+  onApplyEnrichment?: (placeId: string, updates: Partial<Place>) => Promise<void> | void
 }
 
 // Default color palette for new tags
@@ -78,6 +80,7 @@ export function PlaceDetails({
   existingTags = [],
   onUpdateTagColor,
   onUpdateUserRating,
+  onApplyEnrichment,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -568,6 +571,20 @@ const handleUpdateEstimatedDuration = async () => {
 
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-6 p-6">
+            {onApplyEnrichment && (
+              <PlaceEnrichment
+                place={detailedPlace}
+                onApply={async (updates) => {
+                  await onApplyEnrichment(detailedPlace.id, updates)
+                  setDetailedPlace((prev) => ({ ...prev, ...updates }))
+                  if (updates.website) setWebsiteUrl(updates.website)
+                  if (updates.price) setPriceValue(updates.price)
+                  if (updates.openingHours) setOpeningHours(updates.openingHours.weekdayText)
+                  if (updates.photos) setCurrentImageIndex(0)
+                }}
+              />
+            )}
+
             {(detailedPlace.photos || []).length > 0 && (
               <div className="relative">
                 <img
