@@ -25,6 +25,7 @@ import {
 import { TravelSpinner } from "@/components/ui/travel-spinner"
 import { VeryDiscoLogo } from "@/components/ui/verydisco-logo"
 import { TripSummary } from "./trip-summary"
+import { MissingInfoIndicator } from "./missing-info-indicator"
 
 export function DestinationPage() {
   const params = useParams()
@@ -225,6 +226,17 @@ export function DestinationPage() {
 
     if (selectedPlace?.id === placeId) {
       setSelectedPlace((prev) => (prev ? { ...prev, userRating } : null))
+    }
+  }
+
+  const handleApplyEnrichment = async (placeId: string, updates: Partial<Place>) => {
+    if (!trip) return
+
+    const updatedPlaces = trip.places.map((p) => (p.id === placeId ? { ...p, ...updates } : p))
+    await updateTrip({ places: updatedPlaces })
+
+    if (selectedPlace?.id === placeId) {
+      setSelectedPlace((prev) => (prev ? { ...prev, ...updates } : null))
     }
   }
 
@@ -660,9 +672,10 @@ export function DestinationPage() {
                               onClick={() => setEditingName(place.id)}
                               title="Cliquer pour modifier le nom"
                             >
-                              {place.name}
-                            </h3>
+                            {place.name}
+                          </h3>
                           )}
+                          <MissingInfoIndicator place={place} onClick={() => handlePlaceSelect(place)} />
                           <div className="flex shrink-0 items-center gap-1">
                             <Button
                               variant="ghost"
@@ -883,6 +896,7 @@ export function DestinationPage() {
             existingTags={allTags}
             onUpdateTagColor={handleUpdateTagColor}
             onUpdateUserRating={handleUpdateUserRating}
+          onApplyEnrichment={handleApplyEnrichment}
           />
         )}
       </div>
