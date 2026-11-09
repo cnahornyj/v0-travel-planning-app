@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.114",
     "@aws-sdk/credential-providers": "latest",
     "@hookform/resolvers": "^3.10.0",
     "@mongodb-js/zstd": "latest",

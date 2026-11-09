@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { generateText, Output } from "ai"
+import { google } from "@ai-sdk/google"
 import { z } from "zod"
 
 export const maxDuration = 60
@@ -74,19 +75,19 @@ export async function POST(request: Request) {
   const wants = new Set(missing)
   const suggestions: EnrichmentSuggestions = {}
 
-  const google = await fetchGoogleDetails(place.id)
-  if (google) {
-    if (wants.has("openingHours") && google.weekdayText.length > 0) {
-      suggestions.openingHours = { value: google.weekdayText, source: "google" }
+  const details = await fetchGoogleDetails(place.id)
+  if (details) {
+    if (wants.has("openingHours") && details.weekdayText.length > 0) {
+      suggestions.openingHours = { value: details.weekdayText, source: "google" }
     }
-    if (wants.has("website") && google.website) {
-      suggestions.website = { value: google.website, source: "google" }
+    if (wants.has("website") && details.website) {
+      suggestions.website = { value: details.website, source: "google" }
     }
-    if (wants.has("editorialSummary") && google.editorialSummary) {
-      suggestions.editorialSummary = { value: google.editorialSummary, source: "google" }
+    if (wants.has("editorialSummary") && details.editorialSummary) {
+      suggestions.editorialSummary = { value: details.editorialSummary, source: "google" }
     }
-    if (wants.has("photos") && google.photos.length > 0) {
-      suggestions.photos = { value: google.photos, source: "google" }
+    if (wants.has("photos") && details.photos.length > 0) {
+      suggestions.photos = { value: details.photos, source: "google" }
     }
   }
 
@@ -100,7 +101,10 @@ export async function POST(request: Request) {
   if (Object.values(needsAi).some(Boolean)) {
     try {
       const { output } = await generateText({
-        model: "openai/gpt-5.4-mini",
+        model: google("gemini-3.5-flash"),
+        tools: {
+          google_search: google.tools.googleSearch({}),
+        },
         output: Output.object({
           schema: z.object({
             editorialSummary: z
@@ -126,7 +130,8 @@ export async function POST(request: Request) {
         }),
         system:
           "Tu es un assistant de planification de voyage. Tu complètes la fiche d'un lieu touristique avec des informations fiables. " +
-          "N'invente jamais : si tu ne connais pas le lieu ou si une information est incertaine, renvoie null pour ce champ.",
+          "Utilise la recherche Google pour vérifier les informations actuelles (horaires, tarifs). " +
+          "N'invente jamais : si tu ne trouves pas le lieu ou si une information est incertaine, renvoie null pour ce champ.",
         prompt: [
           `Lieu : ${place.name}`,
           place.address ? `Adresse : ${place.address}` : null,
@@ -157,8 +162,8 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("[v0] Place enrichment AI error:", error)
       if (Object.keys(suggestions).length === 0) {
-        const message = error instanceof Error && /credit card/i.test(error.message)
-          ? "L'IA n'est pas encore activée : ajoutez une carte bancaire sur Vercel AI Gateway pour débloquer les crédits gratuits."
+        const message = !process.env.GOOGLE_GENERATIVE_AI_API_KEY
+          ? "L'IA n'est pas configurée : ajoutez la variable GOOGLE_GENERATIVE_AI_API_KEY."
           : "L'IA n'a pas pu compléter ce lieu"
         return NextResponse.json({ error: message }, { status: 502 })
       }
