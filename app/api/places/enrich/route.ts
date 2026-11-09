@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
 import { generateText, Output } from "ai"
-import { google } from "@ai-sdk/google"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { z } from "zod"
 
 export const maxDuration = 60
+
+const geminiApiKey = process.env.API ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY
+const google = createGoogleGenerativeAI({ apiKey: geminiApiKey })
 
 const requestSchema = z.object({
   place: z.object({
@@ -162,8 +165,8 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("[v0] Place enrichment AI error:", error)
       if (Object.keys(suggestions).length === 0) {
-        const message = !process.env.GOOGLE_GENERATIVE_AI_API_KEY
-          ? "L'IA n'est pas configurée : ajoutez la variable GOOGLE_GENERATIVE_AI_API_KEY."
+        const message = !geminiApiKey
+          ? "L'IA n'est pas configurée : ajoutez la clé Gemini dans la variable API."
           : "L'IA n'a pas pu compléter ce lieu"
         return NextResponse.json({ error: message }, { status: 502 })
       }
