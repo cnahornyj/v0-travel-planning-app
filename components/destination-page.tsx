@@ -11,6 +11,8 @@ import { ArrowLeft, Trash2, MapPin, Star, Edit, Filter, Info, Calendar, Calendar
 import type { Trip, Place, ScheduledEvent, TicketFile } from "./travel-planner"
 import { ScheduleSidebar } from "./schedule-sidebar"
 import { EventDialog } from "./event-dialog"
+import { AiScheduleDialog } from "./ai-schedule/ai-schedule-dialog"
+import type { PlaceUpdate } from "@/lib/ai-schedule/types"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -47,6 +49,7 @@ export function DestinationPage() {
     lng: -74.006,
   })
   const [showScheduleSidebar, setShowScheduleSidebar] = useState(false)
+  const [showAiSchedule, setShowAiSchedule] = useState(false)
   const [showEventDialog, setShowEventDialog] = useState(false)
   const [eventDialogInitialDate, setEventDialogInitialDate] = useState<string | undefined>()
   const [eventDialogInitialPlaceId, setEventDialogInitialPlaceId] = useState<string | undefined>()
@@ -282,6 +285,38 @@ export function DestinationPage() {
       e.id === eventId ? { ...eventData, id: eventId } : e
     )
     await updateTrip({ scheduledEvents: updatedEvents })
+  }
+
+  const handleMoveScheduledEvent = async (eventId: string, date: string, startTime: string) => {
+    if (!trip) return
+
+    const updatedEvents = (trip.scheduledEvents || []).map((e) =>
+      e.id === eventId ? { ...e, date, startTime } : e
+    )
+    await updateTrip({ scheduledEvents: updatedEvents })
+  }
+
+  const handleApplyAiSchedule = async (
+    events: Omit<ScheduledEvent, "id">[],
+    placeUpdates: Record<string, PlaceUpdate>,
+    tripTimes: Pick<Trip, "arrivalTime" | "departureTime">,
+  ) => {
+    if (!trip) return
+    const newEvents: ScheduledEvent[] = events.map((event) => {
+      const ticketFile = trip.places.find((p) => p.id === event.placeId)?.ticketFile
+      return { ...event, id: crypto.randomUUID(), ...(ticketFile ? { ticketFile } : {}) }
+    })
+    const updatedPlaces = trip.places.map((p) => (placeUpdates[p.id] ? { ...p, ...placeUpdates[p.id] } : p))
+    await updateTrip({
+      places: updatedPlaces,
+      scheduledEvents: [...(trip.scheduledEvents || []), ...newEvents],
+      arrivalTime: tripTimes.arrivalTime ?? "",
+      departureTime: tripTimes.departureTime ?? "",
+    })
+  }
+
+  const handleUpdateSetting = async (placeId: string, setting: Place["setting"]) => {
+    await handleApplyEnrichment(placeId, { setting })
   }
 
   const handleEditEvent = (event: ScheduledEvent) => {
@@ -897,6 +932,7 @@ export function DestinationPage() {
             onUpdateTagColor={handleUpdateTagColor}
             onUpdateUserRating={handleUpdateUserRating}
           onApplyEnrichment={handleApplyEnrichment}
+            onUpdateSetting={handleUpdateSetting}
           />
         )}
       </div>
@@ -914,7 +950,18 @@ export function DestinationPage() {
         tripStartDate={trip.startDate}
         tripEndDate={trip.endDate}
         tagColors={trip.tagColors || {}}
+        onGenerateWithAI={() => setShowAiSchedule(true)}
+        onMoveEvent={handleMoveScheduledEvent}
       />
+
+      {showAiSchedule && (
+        <AiScheduleDialog
+          isOpen={showAiSchedule}
+          onClose={() => setShowAiSchedule(false)}
+          trip={trip}
+          onApply={handleApplyAiSchedule}
+        />
+      )}
 
       {/* Event Creation Dialog */}
       <EventDialog

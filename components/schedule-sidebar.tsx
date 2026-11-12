@@ -12,6 +12,9 @@ import {
   Trash2,
   AlertTriangle,
   Ticket,
+  Sparkles,
+  Maximize2,
+  Minimize2,
 } from "lucide-react"
 import type { Place, ScheduledEvent } from "./travel-planner"
 import { cn } from "@/lib/utils"
@@ -44,7 +47,18 @@ interface ScheduleSidebarProps {
   tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
   tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
   tagColors?: Record<string, string> // Custom colors for tags
+  onGenerateWithAI?: () => void
+  onMoveEvent?: (eventId: string, date: string, startTime: string) => void
 }
+
+interface DropPreview {
+  dateKey: string
+  startMinutes: number
+  duration: number
+  isValid: boolean
+}
+
+const SNAP_MINUTES = 15
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const HOUR_HEIGHT = 60 // pixels per hour
@@ -210,7 +224,24 @@ export function ScheduleSidebar({
   tripStartDate,
   tripEndDate,
   tagColors = {},
+  onGenerateWithAI,
+  onMoveEvent,
 }: ScheduleSidebarProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [draggingEvent, setDraggingEvent] = useState<ScheduledEvent | null>(null)
+  const [dropPreview, setDropPreview] = useState<DropPreview | null>(null)
+  const dragOffsetMinutes = useRef(0)
+
+  useEffect(() => {
+    if (!isExpanded) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.querySelector("[role='dialog']")) {
+        setIsExpanded(false)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isExpanded])
   const [currentDate, setCurrentDate] = useState(() => {
     // Initialize to trip start date if available, otherwise today
     if (tripStartDate) {
@@ -303,6 +334,60 @@ export function ScheduleSidebar({
     onOpenEventDialog(dateKey, undefined, startTime)
   }
 
+  const computeDropPreview = (
+    e: React.DragEvent<HTMLDivElement>,
+    date: Date,
+    event: ScheduledEvent
+  ): DropPreview => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const pointerMinutes = (e.clientY - rect.top) / (HOUR_HEIGHT / 60)
+    const rawStart = pointerMinutes - dragOffsetMinutes.current
+    const snapped = Math.round(rawStart / SNAP_MINUTES) * SNAP_MINUTES
+    const startMinutes = Math.min(Math.max(snapped, 0), 24 * 60 - Math.min(event.duration, 24 * 60))
+
+    const slotStart = new Date(date)
+    slotStart.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0)
+    const isValid =
+      isDateWithinTripRange(date, tripStartDate, tripEndDate) && slotStart >= new Date()
+
+    return { dateKey: formatDateKey(date), startMinutes, duration: event.duration, isValid }
+  }
+
+  const resetDrag = () => {
+    setDraggingEvent(null)
+    setDropPreview(null)
+  }
+
+  const handleColumnDragOver = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
+    if (!draggingEvent) return
+    const preview = computeDropPreview(e, date, draggingEvent)
+    if (preview.isValid) {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = "move"
+    }
+    if (
+      !dropPreview ||
+      dropPreview.dateKey !== preview.dateKey ||
+      dropPreview.startMinutes !== preview.startMinutes ||
+      dropPreview.isValid !== preview.isValid
+    ) {
+      setDropPreview(preview)
+    }
+  }
+
+  const handleColumnDrop = (e: React.DragEvent<HTMLDivElement>, date: Date) => {
+    e.preventDefault()
+    if (!draggingEvent || !onMoveEvent) return resetDrag()
+    const preview = computeDropPreview(e, date, draggingEvent)
+    const newStartTime = minutesToTime(preview.startMinutes)
+    const hasMoved =
+      preview.dateKey !== draggingEvent.date || newStartTime !== draggingEvent.startTime
+    if (preview.isValid && hasMoved) {
+      onMoveEvent(draggingEvent.id, preview.dateKey, newStartTime)
+    }
+    resetDrag()
+  }
+
   const today = new Date()
 
   const getHeaderText = (): string => {
@@ -322,7 +407,12 @@ export function ScheduleSidebar({
   if (!isOpen) return null
 
   return (
-    <div className="flex h-full w-[700px] flex-col border-l bg-background">
+    <div
+      className={cn(
+        "flex flex-col bg-background",
+        isExpanded ? "fixed inset-0 z-40 w-full" : "h-full w-[700px] border-l"
+      )}
+    >
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b p-3">
         <div className="flex items-center gap-2">
@@ -332,9 +422,34 @@ export function ScheduleSidebar({
             {scheduledEvents.length} events
           </Badge>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="size-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {onGenerateWithAI && (
+            <Button size="sm" className="gap-1.5" onClick={onGenerateWithAI}>
+              <Sparkles className="size-4" aria-hidden />
+              Générer le planning avec l&apos;IA
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded((v) => !v)}
+            aria-label={isExpanded ? "Réduire le calendrier" : "Afficher le calendrier en plein écran"}
+            title={isExpanded ? "Réduire (Échap)" : "Plein écran"}
+          >
+            {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setIsExpanded(false)
+              onClose()
+            }}
+            aria-label="Fermer le calendrier"
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -416,6 +531,7 @@ export function ScheduleSidebar({
             const dateKey = formatDateKey(date)
             const dayEvents = eventsByDate.get(dateKey) || []
             const isToday = isSameDay(date, today)
+            const columnPreview = dropPreview?.dateKey === dateKey ? dropPreview : null
 
             return (
               <div
@@ -424,7 +540,28 @@ export function ScheduleSidebar({
                   "relative flex-1 border-r last:border-r-0",
                   isToday && "bg-primary/5"
                 )}
+                onDragOver={(e) => handleColumnDragOver(e, date)}
+                onDrop={(e) => handleColumnDrop(e, date)}
               >
+                {columnPreview && (
+                  <div
+                    aria-hidden
+                    className={cn(
+                      "pointer-events-none absolute left-0.5 right-0.5 z-20 rounded border-2 border-dashed px-1.5 py-1 text-[10px] font-medium",
+                      columnPreview.isValid
+                        ? "border-primary bg-primary/15 text-primary"
+                        : "border-destructive bg-destructive/10 text-destructive"
+                    )}
+                    style={{
+                      top: columnPreview.startMinutes * (HOUR_HEIGHT / 60),
+                      height: Math.max(columnPreview.duration * (HOUR_HEIGHT / 60), 24),
+                    }}
+                  >
+                    {columnPreview.isValid
+                      ? formatTime(minutesToTime(columnPreview.startMinutes))
+                      : "Indisponible"}
+                  </div>
+                )}
                 {/* Hour slots */}
                 {HOURS.map((hour) => {
                   const isPast = isTimeSlotInPast(date, hour)
@@ -476,9 +613,22 @@ export function ScheduleSidebar({
                   return (
                     <div
                       key={event.id}
+                      draggable={!!onMoveEvent}
+                      onDragStart={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        dragOffsetMinutes.current = (e.clientY - rect.top) / (HOUR_HEIGHT / 60)
+                        e.dataTransfer.effectAllowed = "move"
+                        e.dataTransfer.setData("text/plain", event.id)
+                        setHoveredEvent(null)
+                        setDraggingEvent(event)
+                      }}
+                      onDragEnd={resetDrag}
                       className={cn(
-                        "absolute left-0.5 right-0.5 z-10 cursor-pointer overflow-hidden rounded border px-1.5 py-1 text-white shadow-sm transition-all",
-                        isHovered && "z-30 ring-2 ring-offset-2",
+                        "absolute left-0.5 right-0.5 z-10 overflow-hidden rounded border px-1.5 py-1 text-white shadow-sm transition-all",
+                        onMoveEvent ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+                        isHovered && !draggingEvent && "z-30 ring-2 ring-offset-2",
+                        draggingEvent?.id === event.id && "opacity-40",
+                        draggingEvent && draggingEvent.id !== event.id && "pointer-events-none",
                         !openingCheck.isOpen && "border-amber-400"
                       )}
                       style={{ 

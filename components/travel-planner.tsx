@@ -32,6 +32,7 @@ export interface Place {
   price?: string // free-text price field, e.g. "15€", "Gratuit", "10-20€"
   ticketFile?: TicketFile // uploaded ticket file (PDF, image, etc.)
   visitPreference?: "morning" | "afternoon" | "evening" | "night" | "anytime"
+  setting?: "indoor" | "outdoor" | "mixed"
   phone?: string
   website?: string
   openingHours?: {
@@ -71,6 +72,8 @@ export interface Trip {
   description?: string
   startDate?: string
   endDate?: string
+  arrivalTime?: string
+  departureTime?: string
   adults?: number
   children?: number
   places: Place[]

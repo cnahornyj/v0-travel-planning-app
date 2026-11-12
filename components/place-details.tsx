@@ -47,7 +47,14 @@ interface PlaceDetailsProps {
   onUpdateTagColor?: (tag: string, color: string) => void
   onUpdateUserRating?: (placeId: string, rating: number | undefined) => void
   onApplyEnrichment?: (placeId: string, updates: Partial<Place>) => Promise<void> | void
+  onUpdateSetting?: (placeId: string, setting: Place["setting"]) => Promise<void> | void
 }
+
+const SETTING_OPTIONS: Array<{ value: NonNullable<Place["setting"]>; label: string }> = [
+  { value: "indoor", label: "Intérieur" },
+  { value: "outdoor", label: "Extérieur" },
+  { value: "mixed", label: "Mixte" },
+]
 
 // Default color palette for new tags
 const TAG_COLOR_PALETTE = [
@@ -81,6 +88,7 @@ export function PlaceDetails({
   onUpdateTagColor,
   onUpdateUserRating,
   onApplyEnrichment,
+  onUpdateSetting,
 }: PlaceDetailsProps) {
   const [detailedPlace, setDetailedPlace] = useState<Place>(place)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -722,6 +730,39 @@ const handleUpdateEstimatedDuration = async () => {
             </div>
 
             {formatOpeningHours()}
+
+            {onUpdateSetting && (
+              <div className="space-y-2">
+                <span id="place-setting-label" className="text-sm font-medium">
+                  Type de visite:
+                </span>
+                <div role="radiogroup" aria-labelledby="place-setting-label" className="flex gap-2">
+                  {SETTING_OPTIONS.map((option) => {
+                    const selected = detailedPlace.setting === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => {
+                          const setting = selected ? undefined : option.value
+                          setDetailedPlace((prev) => ({ ...prev, setting }))
+                          onUpdateSetting(detailedPlace.id, setting)
+                        }}
+                        className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                          selected
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Estimated Visit Duration + Price side by side */}
             <div className="grid grid-cols-2 gap-4">
