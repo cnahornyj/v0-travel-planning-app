@@ -290,6 +290,7 @@ export function DestinationPage() {
   const handleApplyAiSchedule = async (
     events: Omit<ScheduledEvent, "id">[],
     placeUpdates: Record<string, PlaceUpdate>,
+    tripTimes: Pick<Trip, "arrivalTime" | "departureTime">,
   ) => {
     if (!trip) return
     const newEvents: ScheduledEvent[] = events.map((event) => {
@@ -297,7 +298,12 @@ export function DestinationPage() {
       return { ...event, id: crypto.randomUUID(), ...(ticketFile ? { ticketFile } : {}) }
     })
     const updatedPlaces = trip.places.map((p) => (placeUpdates[p.id] ? { ...p, ...placeUpdates[p.id] } : p))
-    await updateTrip({ places: updatedPlaces, scheduledEvents: [...(trip.scheduledEvents || []), ...newEvents] })
+    await updateTrip({
+      places: updatedPlaces,
+      scheduledEvents: [...(trip.scheduledEvents || []), ...newEvents],
+      arrivalTime: tripTimes.arrivalTime ?? "",
+      departureTime: tripTimes.departureTime ?? "",
+    })
   }
 
   const handleUpdateSetting = async (placeId: string, setting: Place["setting"]) => {

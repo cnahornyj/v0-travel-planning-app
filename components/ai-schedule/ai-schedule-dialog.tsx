@@ -13,7 +13,7 @@ import type {
   ScheduleOptions,
   StreamMessage,
 } from "@/lib/ai-schedule/types"
-import { ScheduleOptionsForm } from "./schedule-options-form"
+import { ScheduleOptionsForm, type TravelTimes } from "./schedule-options-form"
 import { SchedulePreview } from "./schedule-preview"
 
 const STEPS: Array<{ id: GenerationStep; label: string }> = [
@@ -86,7 +86,11 @@ interface AiScheduleDialogProps {
   isOpen: boolean
   onClose: () => void
   trip: Trip
-  onApply: (events: Omit<ScheduledEvent, "id">[], placeUpdates: Record<string, PlaceUpdate>) => Promise<void>
+  onApply: (
+    events: Omit<ScheduledEvent, "id">[],
+    placeUpdates: Record<string, PlaceUpdate>,
+    tripTimes: Pick<Trip, "arrivalTime" | "departureTime">,
+  ) => Promise<void>
 }
 
 export function AiScheduleDialog({ isOpen, onClose, trip, onApply }: AiScheduleDialogProps) {
@@ -118,6 +122,12 @@ export function AiScheduleDialog({ isOpen, onClose, trip, onApply }: AiScheduleD
     lunchBreak: true,
     instructions: "",
   })
+  const [travelTimes, setTravelTimes] = useState<TravelTimes>({
+    arrivalTime: trip.arrivalTime ?? "",
+    departureTime: trip.departureTime ?? "",
+  })
+  const arrivalDate = trip.startDate?.slice(0, 10)
+  const departureDate = trip.endDate?.slice(0, 10)
   const [currentStep, setCurrentStep] = useState<GenerationStep | null>(null)
   const [plan, setPlan] = useState<GeneratedPlan | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -131,7 +141,13 @@ export function AiScheduleDialog({ isOpen, onClose, trip, onApply }: AiScheduleD
     events: existingEvents.map(({ placeId, date, startTime, duration }) => ({ placeId, date, startTime, duration })),
     dates: targetDates,
     today,
-    options: { ...options, instructions: options.instructions?.trim() || undefined },
+    options: {
+      ...options,
+      instructions: options.instructions?.trim() || undefined,
+      arrival: arrivalDate && travelTimes.arrivalTime ? { date: arrivalDate, time: travelTimes.arrivalTime } : undefined,
+      departure:
+        departureDate && travelTimes.departureTime ? { date: departureDate, time: travelTimes.departureTime } : undefined,
+    },
   })
 
   const handleGenerate = async () => {
@@ -195,7 +211,10 @@ export function AiScheduleDialog({ isOpen, onClose, trip, onApply }: AiScheduleD
           notes: step.reason,
         })),
       )
-      await onApply(events, plan.placeUpdates)
+      await onApply(events, plan.placeUpdates, {
+        arrivalTime: travelTimes.arrivalTime || undefined,
+        departureTime: travelTimes.departureTime || undefined,
+      })
       handleClose()
     } finally {
       setIsApplying(false)
@@ -250,6 +269,10 @@ export function AiScheduleDialog({ isOpen, onClose, trip, onApply }: AiScheduleD
                 onChange={setOptions}
                 placeCount={candidates.length}
                 dayCount={dates.length}
+                travelTimes={travelTimes}
+                onTravelTimesChange={setTravelTimes}
+                arrivalDate={arrivalDate && arrivalDate >= today ? arrivalDate : undefined}
+                departureDate={departureDate}
               />
             ))}
 

@@ -73,9 +73,31 @@ interface ScheduleOptionsFormProps {
   onChange: (options: ScheduleOptions) => void
   placeCount: number
   dayCount: number
+  travelTimes: TravelTimes
+  onTravelTimesChange: (times: TravelTimes) => void
+  arrivalDate?: string
+  departureDate?: string
 }
 
-export function ScheduleOptionsForm({ options, onChange, placeCount, dayCount }: ScheduleOptionsFormProps) {
+export interface TravelTimes {
+  arrivalTime: string
+  departureTime: string
+}
+
+function formatShortDate(date: string): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })
+}
+
+export function ScheduleOptionsForm({
+  options,
+  onChange,
+  placeCount,
+  dayCount,
+  travelTimes,
+  onTravelTimesChange,
+  arrivalDate,
+  departureDate,
+}: ScheduleOptionsFormProps) {
   const update = (partial: Partial<ScheduleOptions>) => onChange({ ...options, ...partial })
   const invalidWindow = options.dayStart >= options.dayEnd
 
@@ -86,6 +108,43 @@ export function ScheduleOptionsForm({ options, onChange, placeCount, dayCount }:
         {placeCount > 1 ? "s" : ""} à répartir sur <span className="font-medium text-foreground">{dayCount}</span> jour
         {dayCount > 1 ? "s" : ""}. Les événements déjà prévus restent en place.
       </p>
+
+      {(arrivalDate || departureDate) && (
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-2 text-sm font-medium">Arrivée et départ</legend>
+          <div className="grid grid-cols-2 gap-4">
+            {arrivalDate && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ai-arrival-time" className="font-normal text-muted-foreground">
+                  Arrivée le {formatShortDate(arrivalDate)}
+                </Label>
+                <Input
+                  id="ai-arrival-time"
+                  type="time"
+                  value={travelTimes.arrivalTime}
+                  onChange={(e) => onTravelTimesChange({ ...travelTimes, arrivalTime: e.target.value })}
+                />
+              </div>
+            )}
+            {departureDate && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="ai-departure-time" className="font-normal text-muted-foreground">
+                  Départ le {formatShortDate(departureDate)}
+                </Label>
+                <Input
+                  id="ai-departure-time"
+                  type="time"
+                  value={travelTimes.departureTime}
+                  onChange={(e) => onTravelTimesChange({ ...travelTimes, departureTime: e.target.value })}
+                />
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {"1 h est laissée libre après l'arrivée et 2 h avant le départ. Laisser vide pour une journée complète."}
+          </p>
+        </fieldset>
+      )}
 
       <Segmented label="Rythme" value={options.pace} options={PACE_OPTIONS} onChange={(pace) => update({ pace })} />
 

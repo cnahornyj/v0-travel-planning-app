@@ -72,6 +72,8 @@ export interface Trip {
   description?: string
   startDate?: string
   endDate?: string
+  arrivalTime?: string
+  departureTime?: string
   adults?: number
   children?: number
   places: Place[]

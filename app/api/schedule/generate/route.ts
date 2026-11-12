@@ -73,8 +73,20 @@ const requestSchema = z.object({
     travelMode: z.enum(["walking", "transit", "driving"]),
     lunchBreak: z.boolean(),
     instructions: z.string().max(1000).optional(),
+    arrival: z.object({ date: dateString, time: timeString }).optional(),
+    departure: z.object({ date: dateString, time: timeString }).optional(),
   }),
 })
+
+function describeWindow(day: DayContext, options: RequestBody["options"]): string {
+  const notes = [
+    options.arrival?.date === day.date ? `arrivée à ${options.arrival.time}` : null,
+    options.departure?.date === day.date ? `départ à ${options.departure.time}` : null,
+  ].filter(Boolean)
+  const suffix = notes.length ? ` (${notes.join(", ")})` : ""
+  if (day.window.end <= day.window.start) return `aucune visite possible${suffix}`
+  return `${minutesToTime(day.window.start)}–${minutesToTime(day.window.end)}${suffix}`
+}
 
 type RequestBody = z.infer<typeof requestSchema>
 type RequestPlace = RequestBody["places"][number]
@@ -221,6 +233,7 @@ async function planWithAi(
       .slice(0, 40)
     return [
       `## ${day.date} (${DAY_LABELS[new Date(`${day.date}T12:00:00Z`).getUTCDay()]})`,
+      `Plage disponible : ${describeWindow(day, options)}`,
       `Météo : ${describeWeather(day.weather)}`,
       `Créneaux déjà pris : ${day.busy.length ? day.busy.map((b) => `${minutesToTime(b.start)}–${minutesToTime(b.end)}`).join(", ") : "aucun"}`,
       `Lieux suggérés (groupés par proximité) : ${suggested.map((p) => refOf.get(p.id)).join(", ") || "aucun"}`,
@@ -240,7 +253,8 @@ async function planWithAi(
       "2. Proximité : garde les regroupements suggérés et enchaîne les lieux proches pour limiter les trajets. Laisse le temps de trajet entre deux étapes.",
       "3. Météo : extérieur les jours/moments secs, intérieur quand il pleut ; en forte chaleur (>30°C) l'extérieur le matin. Tu peux déplacer un lieu vers un autre jour pour ces raisons, en l'expliquant.",
       "4. Préférences de l'utilisateur (moment préféré du lieu, rythme, consigne).",
-      `Journées entre ${options.dayStart} et ${options.dayEnd}. Ne chevauche jamais les créneaux déjà pris.`,
+      "Chaque visite doit tenir entièrement dans la plage disponible du jour (réduite les jours d'arrivée et de départ). Ne planifie rien un jour sans plage disponible. Ne chevauche jamais les créneaux déjà pris.",
+      "Le jour d'arrivée, privilégie une visite courte et proche ; le jour de départ, rien de lointain.",
       options.lunchBreak ? "Laisse libre la pause déjeuner de 12:30 à 14:00 (sauf pour un restaurant)." : null,
       "Chaque lieu apparaît au plus une fois. Si un lieu ne peut pas être placé, mets-le dans unplaced avec la raison.",
       "Rédige les justifications et résumés en français, de façon concise.",
@@ -343,7 +357,10 @@ async function generatePlan(body: RequestBody, send: (message: StreamMessage) =>
       const index = unplaced.findIndex((entry) => entry.placeId === place.id)
       if (index >= 0) unplaced.splice(index, 1)
     } else if (!rejectedIds.has(place.id)) {
-      unplaced.push({ placeId: place.id, reason: rejectionReason(place, days[0]) })
+      const widestDay = days.reduce((best, day) =>
+        day.window.end - day.window.start > best.window.end - best.window.start ? day : best,
+      )
+      unplaced.push({ placeId: place.id, reason: rejectionReason(place, widestDay) })
     }
   }
 

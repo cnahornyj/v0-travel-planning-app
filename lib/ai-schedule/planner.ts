@@ -2,6 +2,8 @@ import type { Place } from "@/components/travel-planner"
 import { distanceKm, getOpenIntervals, isFoodPlace, timeToMinutes, travelMinutes, type Interval } from "./time"
 import { outdoorWeatherScore } from "./weather"
 import {
+  ARRIVAL_BUFFER,
+  DEPARTURE_BUFFER,
   LUNCH_END,
   LUNCH_START,
   type DayWeather,
@@ -42,14 +44,31 @@ function overlapLength(a: Interval, b: Interval): number {
   return Math.max(0, Math.min(a.end, b.end) - Math.max(a.start, b.start))
 }
 
+/** Visit window of a day, shortened on arrival and departure days. Empty when no visit is possible. */
+export function dayWindow(date: string, options: ScheduleOptions): Interval {
+  let start = timeToMinutes(options.dayStart)
+  let end = timeToMinutes(options.dayEnd)
+  const { arrival, departure } = options
+  if (arrival) {
+    if (date < arrival.date) return { start, end: start }
+    if (date === arrival.date) start = Math.max(start, timeToMinutes(arrival.time) + ARRIVAL_BUFFER)
+  }
+  if (departure) {
+    if (date > departure.date) return { start, end: start }
+    if (date === departure.date) end = Math.min(end, timeToMinutes(departure.time) - DEPARTURE_BUFFER)
+  }
+  start = Math.ceil(start / 15) * 15
+  return end > start ? { start, end } : { start, end: start }
+}
+
 export function buildDayContexts(
   dates: string[],
   events: Array<{ date: string; startTime: string; duration: number }>,
   options: ScheduleOptions,
   weather: Map<string, DayWeather>,
 ): DayContext[] {
-  const window = { start: timeToMinutes(options.dayStart), end: timeToMinutes(options.dayEnd) }
   return dates.map((date) => {
+    const window = dayWindow(date, options)
     const busy = events
       .filter((event) => event.date === date)
       .map((event) => {

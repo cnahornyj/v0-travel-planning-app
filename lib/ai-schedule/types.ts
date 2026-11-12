@@ -11,7 +11,19 @@ export interface ScheduleOptions {
   travelMode: TravelMode
   lunchBreak: boolean
   instructions?: string
+  arrival?: TripMoment
+  departure?: TripMoment
 }
+
+export interface TripMoment {
+  date: string
+  time: string
+}
+
+/** Temps laissé après l'arrivée (trajet, dépôt des bagages) */
+export const ARRIVAL_BUFFER = 60
+/** Temps réservé avant le départ (trajet vers la gare/l'aéroport) */
+export const DEPARTURE_BUFFER = 120
 
 export type WeatherIcon = "sun" | "cloud-sun" | "cloud" | "fog" | "drizzle" | "rain" | "snow" | "storm"
 
