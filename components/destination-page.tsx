@@ -287,6 +287,15 @@ export function DestinationPage() {
     await updateTrip({ scheduledEvents: updatedEvents })
   }
 
+  const handleMoveScheduledEvent = async (eventId: string, date: string, startTime: string) => {
+    if (!trip) return
+
+    const updatedEvents = (trip.scheduledEvents || []).map((e) =>
+      e.id === eventId ? { ...e, date, startTime } : e
+    )
+    await updateTrip({ scheduledEvents: updatedEvents })
+  }
+
   const handleApplyAiSchedule = async (
     events: Omit<ScheduledEvent, "id">[],
     placeUpdates: Record<string, PlaceUpdate>,
@@ -942,6 +951,7 @@ export function DestinationPage() {
         tripEndDate={trip.endDate}
         tagColors={trip.tagColors || {}}
         onGenerateWithAI={() => setShowAiSchedule(true)}
+        onMoveEvent={handleMoveScheduledEvent}
       />
 
       {showAiSchedule && (
