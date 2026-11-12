@@ -154,6 +154,7 @@ export function EventDialog({
   const [error, setError] = useState<string>("")
 
   const isEditing = !!editingEvent
+  const isPlaceFixed = isEditing || !!initialPlaceId
   const todayStr = getTodayDateString()
 
   // Determine min and max dates for the date picker
@@ -271,7 +272,28 @@ export function EventDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Place Selection */}
+          {isPlaceFixed ? (
+            selectedPlace && (
+              <div className="flex items-center gap-3 rounded-md border bg-muted/30 p-3">
+                {selectedPlace.photos?.[0] && (
+                  <img
+                    src={selectedPlace.photos[0]}
+                    alt=""
+                    className="size-10 shrink-0 rounded object-cover"
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{selectedPlace.name}</p>
+                  {selectedPlace.address && (
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="size-3 shrink-0" />
+                      <span className="truncate">{selectedPlace.address}</span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          ) : (
           <div className="space-y-2">
             <Label htmlFor="place">Place</Label>
             <Select value={selectedPlaceId} onValueChange={setSelectedPlaceId}>
@@ -302,6 +324,7 @@ export function EventDialog({
               </div>
             )}
           </div>
+          )}
 
           {/* Date */}
           <div className="space-y-2">
