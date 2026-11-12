@@ -12,6 +12,7 @@ import {
   Trash2,
   AlertTriangle,
   Ticket,
+  Sparkles,
 } from "lucide-react"
 import type { Place, ScheduledEvent } from "./travel-planner"
 import { cn } from "@/lib/utils"
@@ -44,6 +45,7 @@ interface ScheduleSidebarProps {
   tripStartDate?: string // Optional trip start date constraint (YYYY-MM-DD)
   tripEndDate?: string // Optional trip end date constraint (YYYY-MM-DD)
   tagColors?: Record<string, string> // Custom colors for tags
+  onGenerateWithAI?: () => void
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -210,6 +212,7 @@ export function ScheduleSidebar({
   tripStartDate,
   tripEndDate,
   tagColors = {},
+  onGenerateWithAI,
 }: ScheduleSidebarProps) {
   const [currentDate, setCurrentDate] = useState(() => {
     // Initialize to trip start date if available, otherwise today
@@ -332,9 +335,17 @@ export function ScheduleSidebar({
             {scheduledEvents.length} events
           </Badge>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="size-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {onGenerateWithAI && (
+            <Button size="sm" className="gap-1.5" onClick={onGenerateWithAI}>
+              <Sparkles className="size-4" aria-hidden />
+              Générer le planning avec l&apos;IA
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer le calendrier">
+            <X className="size-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Navigation */}
